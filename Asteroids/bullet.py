@@ -7,7 +7,7 @@ class Bullet:
         self.x = x
         self.y = y
         self.dir = direction
-        self.life = 57
+        self.life = 64
         self.size = size
         self.color = color
         self.damage = 10
@@ -40,12 +40,14 @@ class Missle(Bullet):
     def find_max_correction(self, saucer):
         dist = distance(self, saucer)
         if dist < 700:
-            max_correction = max((700 - dist) / 1000, .5023)
-            self.current_correction += (max_correction * 1.0023)
-            return max(self.current_correction, 6)
+            max_correction = max((700 - dist) / 1000, .82323)
+            self.current_correction += (max_correction * 1.0032323)
+            if dist < 100:
+                self.current_correction += .023
+            return max(self.current_correction, 8.23)
 
         if self.life % 2:
-            return .023
+            return .02323
         else:
             return 0
 
@@ -83,7 +85,7 @@ class collectorBullet(Bullet):
         self.x += bullet_speed * math.cos(self.dir * math.pi / 180)
         self.y += bullet_speed * math.sin(self.dir * math.pi / 180)
 
-        if self.life % 6 != 1:
+        if self.life % 6 == 1:
             self.size += 1
 
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)

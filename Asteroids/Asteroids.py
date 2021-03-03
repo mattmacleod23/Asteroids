@@ -8,7 +8,7 @@ from asteroid import *
 
 parser = ArgumentParser()
 parser.add_argument("-d", "--debug", help="Runs slower so its easier to debug shit", default=False)
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 
 pygame.init()
@@ -29,6 +29,8 @@ timer = pygame.time.Clock()
 # calling for backup
 # make the powerups blink before eol
 # make side movements
+# make lists iterable safe so loops dont get confused if something is removed during a loop
+# freeze everything
 
 
 def gameLoop(startingState):
@@ -39,7 +41,6 @@ def gameLoop(startingState):
     player_pieces = safelist()
     saucer_debris = safelist()
     player_dying_delay = 0
-    player_invi_dur = 0
     hyperspace = 0
     next_level_delay = 0
     bullet_capacity = 14
@@ -93,7 +94,7 @@ def gameLoop(startingState):
 
                 if event.key == pygame.K_SPACE and player_dying_delay == 0 \
                         and (len(bullets) < bullet_capacity or player.has_rapid_fire):
-                    if player.has_rapid_fire:
+                    if player.has_rapid_fire and player.selected_weapon == BULLETS:
                         player.rapidfire(bullets)
                     else:
                         if player.missles and player.selected_weapon == MISSLES:
@@ -104,11 +105,11 @@ def gameLoop(startingState):
                                 player.selected_weapon = BULLETS
                         else:
                             bullets.append(Bullet(player.x, player.y, player.dir))
-                        pygame.mixer.Sound.play(snd_fire)
+                        play_sound(snd_fire)
 
                 if event.key == pygame.K_c and player_dying_delay == 0 and len(bullets) < bullet_capacity:
                     collector_bullets.append(collectorBullet(player.x, player.y, player.dir, color=blue))
-                    pygame.mixer.Sound.play(snd_fire)
+                    play_sound(snd_fire)
 
                 if event.key == pygame.K_DOWN and player.missles > 0:
                     if player.selected_weapon == BULLETS:
@@ -133,8 +134,8 @@ def gameLoop(startingState):
         player.updatePlayer(saucers)
 
         # Checking player invincible time
-        if player_invi_dur != 0:
-            player_invi_dur -= 1
+        if player.invi_dur != 0:
+            player.invi_dur -= 1
         elif hyperspace == 0:
             player_state = "Alive"
 
@@ -154,21 +155,20 @@ def gameLoop(startingState):
             a.updateAsteroid()
             if player_state != "Died":
                 if isColliding(player.x, player.y, a.x, a.y, a.size):
-                    # Create ship fragments
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, player_size))
-
-                    # Kill player
-                    player_state = "Died"
-                    player_dying_delay = 30
-                    player_invi_dur = 120
-                    player.killPlayer()
-
-                    if live != 0:
-                        live -= 1
+                    if player.shields > 1:
+                        player.shields -= 2
+                        play_sound(zap)
                     else:
-                        gameState = "Game Over"
+                        player_state = "Died"
+                        player_dying_delay = 30
+                        player.invi_dur = 120
+                        player.killPlayer()
+                        blowUp(player, player_pieces)
+
+                        if live != 0:
+                            live -= 1
+                        else:
+                            gameState = "Game Over"
 
                     # Split asteroid
                     if a.t == "Large":
@@ -176,17 +176,17 @@ def gameLoop(startingState):
                         asteroids.append(Asteroid(a.x, a.y, "Normal"))
                         score += 20
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
+                        play_sound(snd_bangL)
                     elif a.t == "Normal":
                         asteroids.append(Asteroid(a.x, a.y, "Small"))
                         asteroids.append(Asteroid(a.x, a.y, "Small"))
                         score += 50
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangM)
+                        play_sound(snd_bangM)
                     else:
                         score += 100
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangS)
+                        play_sound(snd_bangS)
                     asteroids.remove(a)
 
         # Update ship fragments
@@ -246,15 +246,15 @@ def gameLoop(startingState):
                             asteroids.append(Asteroid(a.x, a.y, "Normal"))
                             asteroids.append(Asteroid(a.x, a.y, "Normal"))
                             # Play SFX
-                            pygame.mixer.Sound.play(snd_bangL)
+                            play_sound(snd_bangL)
                         elif a.t == "Normal":
                             asteroids.append(Asteroid(a.x, a.y, "Small"))
                             asteroids.append(Asteroid(a.x, a.y, "Small"))
                             # Play SFX
-                            pygame.mixer.Sound.play(snd_bangM)
+                            play_sound(snd_bangM)
                         else:
                             # Play SFX
-                            pygame.mixer.Sound.play(snd_bangS)
+                            play_sound(snd_bangS)
                         asteroids.remove(a)
 
                 # Check for collision w/ bullet
@@ -267,10 +267,7 @@ def gameLoop(startingState):
                             saucer_debris.append(debris_factory(b.x, b.y))
                             saucer_debris.append(debris_factory(b.x, b.y))
 
-                        # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
-
-                        # Remove bullet
+                        play_sound(snd_bangL)
                         bullets.remove(b)
 
                 # Check collision w/ player
@@ -287,7 +284,7 @@ def gameLoop(startingState):
                             # Kill player
                             player_state = "Died"
                             player_dying_delay = 30
-                            player_invi_dur = 120
+                            player.invi_dur = 120
                             player.killPlayer()
 
                             if live != 0:
@@ -296,7 +293,7 @@ def gameLoop(startingState):
                                 gameState = "Game Over"
 
                             # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
+                        play_sound(snd_bangL)
 
                 # Saucer's bullets
                 for b in saucer.bullets:
@@ -311,15 +308,15 @@ def gameLoop(startingState):
                                 asteroids.append(Asteroid(a.x, a.y, "Normal"))
                                 asteroids.append(Asteroid(a.x, a.y, "Normal"))
                                 # Play SFX
-                                pygame.mixer.Sound.play(snd_bangL)
+                                play_sound(snd_bangL)
                             elif a.t == "Normal":
                                 asteroids.append(Asteroid(a.x, a.y, "Small"))
                                 asteroids.append(Asteroid(a.x, a.y, "Small"))
                                 # Play SFX
-                                pygame.mixer.Sound.play(snd_bangL)
+                                play_sound(snd_bangL)
                             else:
                                 # Play SFX
-                                pygame.mixer.Sound.play(snd_bangL)
+                                play_sound(snd_bangL)
 
                             # Remove asteroid and bullet
                             asteroids.remove(a)
@@ -331,20 +328,18 @@ def gameLoop(startingState):
                         if player_state != "Died":
                             if player.shields:
                                 player.shields -= 1
-                                pygame.mixer.Sound.play(zap)
+                                play_sound(zap)
                                 saucer.bullets.remove(b)
                                 continue
 
                             # Create ship fragments
-                            player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                            player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                            player_pieces.append(deadPlayer(player.x, player.y, player_size))
+                            blowUp(player, player_pieces)
                             player.shields = 0
 
                             # Kill player
                             player_state = "Died"
                             player_dying_delay = 30
-                            player_invi_dur = 120
+                            player.invi_dur = 120
                             player.killPlayer()
 
                             if live != 0:
@@ -352,17 +347,11 @@ def gameLoop(startingState):
                             else:
                                 gameState = "Game Over"
 
-                            # Play SFX
-                            pygame.mixer.Sound.play(snd_bangL)
-
-                            # Remove bullet
+                            play_sound(snd_bangL)
                             saucer.bullets.remove(b)
 
                     if b.life <= 0:
-                        try:
-                            saucer.bullets.remove(b)
-                        except ValueError:
-                            continue
+                        saucer.bullets.remove(b)
 
         removable_saucers = [s for s in saucers if not s.is_alive]
 
@@ -403,17 +392,17 @@ def gameLoop(startingState):
                         asteroids.append(Asteroid(a.x, a.y, "Normal"))
                         score += 20
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
+                        play_sound(snd_bangL)
                     elif a.t == "Normal":
                         asteroids.append(Asteroid(a.x, a.y, "Small"))
                         asteroids.append(Asteroid(a.x, a.y, "Small"))
                         score += 50
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangM)
+                        play_sound(snd_bangM)
                     else:
                         score += 100
                         # Play SFX
-                        pygame.mixer.Sound.play(snd_bangS)
+                        play_sound(snd_bangS)
                     asteroids.remove(a)
                     bullets.remove(b)
 
@@ -434,7 +423,7 @@ def gameLoop(startingState):
         # Play sfx
         if playOneUpSFX > 0:
             playOneUpSFX -= 1
-            pygame.mixer.Sound.play(snd_extra, 10)
+            play_sound(snd_extra, 10)
 
         # Draw player
         if gameState != "Game Over":
@@ -456,19 +445,19 @@ def gameLoop(startingState):
             drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 100, 50)
             live = -1
 
-        # draw score
+        # draw score and power up levels
         drawText(str(score), white, 60, 20, 40, False)
 
-        # draw matrix time left
         matrix_time_left = max(0, round(player.matrix_till - time(), 1))
         drawText("MATRIX - " + str(matrix_time_left), green, 260, 20, 35, False)
-        
-        # draw matrix time left
+
         rapid_time_left = max(0, round(player.rapid_fire_till - time(), 1))
         drawText("RapidF - " + str(rapid_time_left), red, 470, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == MISSLES else "OFF"
-        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 660, 20, 35, False)
+        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 670, 20, 35, False)
+
+        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1020, 20, 35, False)
 
         # Draw Lives
         for l in range(live + 1):
@@ -476,16 +465,13 @@ def gameLoop(startingState):
             p.shields = 0
             p.drawPlayer()
 
-        # Update screen
         pygame.display.update()
 
         if not args.debug:
             if player.matrix_till > time():
                 timer.tick(18)
             else:
-                # Tick fps
                 timer.tick(30)
-
         else:
             timer.tick(22)
 

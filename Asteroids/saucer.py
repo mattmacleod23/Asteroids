@@ -17,7 +17,7 @@ class Saucer:
         self.x = 0
         self.y = 0
         self.dirchoice = ()
-        self.bullets = []
+        self.bullets = safelist()
         self.cd = 0
         self.bdir = 0
         self.soundDelay = 0
@@ -138,7 +138,7 @@ class Battleship(Saucer):
         super().__init__()
         self.score = 2500
         self.size = 50
-        self.health = 150
+        self.health = 100
 
     def should_die(self, bullet):
         self.health -= bullet.figure_damage(self)
@@ -155,11 +155,11 @@ class Battleship(Saucer):
 
 class SaucerFactory:
     def __init__(self):
-        self.saucer_num = 1
+        self.saucer_num = 0
 
     def __call__(self, stage=1):
         self.saucer_num += 1
-        if self.saucer_num % battleship_interval == 1:
+        if self.saucer_num % battleship_interval == 0:
             return Battleship()
 
         if not random.randint(0, 3):

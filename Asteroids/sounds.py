@@ -11,3 +11,7 @@ snd_saucerB = pygame.mixer.Sound("Sounds/saucerBig.wav")
 snd_saucerS = pygame.mixer.Sound("Sounds/saucerSmall.wav")
 zap = pygame.mixer.Sound("Sounds/zap.wav")
 new_saucer = pygame.mixer.Sound("Sounds/new_saucer.wav")
+
+
+def play_sound(*args, **kwargs):
+    pygame.mixer.Sound.play(*args, **kwargs)

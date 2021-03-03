@@ -1,3 +1,11 @@
+import pygame
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("-sw", "--width", required=False, type=int, default=1400)
+parser.add_argument("-sh", "--height", required=False, type=int, default=1000)
+args = parser.parse_args()
+
 # Initialize constants
 white = (255, 255, 255)
 red = (255, 0, 0)
@@ -5,9 +13,10 @@ blue = (3, 65, 252)
 green = (124, 252, 0)
 black = (0, 0, 0)
 orange = (255, 131, 0)
+yellow = (255, 216, 110)
 
-display_width = 1400
-display_height = 1000
+display_width = args.width
+display_height = args.height
 
 player_size = 10
 saucer_debris_size = 15
@@ -20,11 +29,16 @@ saucer_speed = 5
 small_saucer_accuracy = 10
 matrix_duration = 10
 shields_size = 20
-starting_shields = 2
-max_saucers = 3
+starting_shields = 4
+max_saucers = 4
 battleship_interval = 8
 
 BULLETS = 1
-MISSLES = 2
-NUKE = 3
+RAPID_FIRE = 2
+MISSLES = 3
+NUKE = 4
+
+MISSLES_BTN = pygame.K_m
+RAPIDFIRE_BTN = pygame.K_DOWN
+
 

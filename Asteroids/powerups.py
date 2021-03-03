@@ -80,7 +80,7 @@ class RapidFireDebris(BonusDebris):
 
 
 class ShieldDebris(BonusDebris):
-    def __init__(self, *args, value=1, **kwargs):
+    def __init__(self, *args, value=2, **kwargs):
         super().__init__(*args, **kwargs)
         self.color = blue
         self.value = value
@@ -98,6 +98,15 @@ class MissleDebris(BonusDebris):
         player.missles += 5
 
 
+class InvincibleDebris(BonusDebris):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = yellow
+
+    def collect(self, player):
+        player.invi_dur += 30 * 10
+
+
 class SaucerDebrisFactory:
     debris_types = [MatrixDebris, RapidFireDebris, ShieldDebris]
 
@@ -106,4 +115,5 @@ class SaucerDebrisFactory:
             return MissleDebris(*args, **kwargs)
         i = random.randint(0, len(self.debris_types) - 1)
         return self.debris_types[i](*args, **kwargs)
+
 

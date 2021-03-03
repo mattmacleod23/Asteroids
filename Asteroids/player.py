@@ -17,12 +17,13 @@ class Player:
         self.thrust = False
         self.is_rapid_firing = False
         self.rapid_fire_rounds = 9
-        self.rapid_fire_till = 0
-        self.matrix_till = 0
+        self.rapid_fire_till = 0  # todo: make this based on the amount of rounds?
+        self.matrix_till = 0   # todo: make this based on ticks?  Make this and on/off with M key?
         self.shields = starting_shields
-        self.missles = 10
+        self.missles = 0
         self.target = None
         self.selected_weapon = BULLETS
+        self.invi_dur = 120
 
     def is_hit_size(self, bullet):
         if self.shields:
