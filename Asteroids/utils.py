@@ -44,8 +44,9 @@ def angle_to(obj, obj2):
 
 
 def angle_difference(dir, obj, obj2):
-    right_dir = angle_to(obj, obj2)
-    return min([abs(right_dir - dir) % 360, abs((right_dir - dir) - 360)])
+    right_dir = angle_to(obj, obj2) % 360
+    dir = dir % 360
+    return min([abs(((right_dir - dir) - 360) % 360), abs(((dir - right_dir) - 360) % 360)])
 
 
 class point:

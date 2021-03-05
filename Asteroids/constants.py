@@ -4,7 +4,9 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("-sw", "--width", required=False, type=int, default=2500)
 parser.add_argument("-sh", "--height", required=False, type=int, default=1400)
-args = parser.parse_args()
+parser.add_argument("-ss", "--starting_shields", type=int, default=4)
+parser.add_argument("-sm", "--starting_missles", type=int, default=0)
+args, _ = parser.parse_known_args()
 
 # Initialize constants
 white = (255, 255, 255)

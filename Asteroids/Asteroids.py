@@ -473,7 +473,7 @@ def gameLoop(startingState):
             else:
                 timer.tick(30)
         else:
-            timer.tick(22)
+            timer.tick(10)
 
 
 # Start game
