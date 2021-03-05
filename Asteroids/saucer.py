@@ -26,6 +26,7 @@ class Saucer:
         self.accuracy = small_saucer_accuracy * 2
         self.color = orange
         self.bullet_size = 6
+        self.angle_difference = 0
         pygame.mixer.Sound.play(new_saucer)
 
         # Set random position
@@ -104,6 +105,8 @@ class Saucer:
                              (self.x - self.size / 3, self.y - 2 * self.size / 3),
                              (self.x + self.size / 3, self.y - 2 * self.size / 3),
                              (self.x + self.size / 2, self.y - self.size / 3)), 1)
+        offset = ((self.size / 2) + 2.3)
+        drawText(str(round(self.angle_difference)), green, self.x - offset, self.y - offset, 20)
 
 
 class SmallSaucer(Saucer):

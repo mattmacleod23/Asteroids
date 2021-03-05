@@ -1,5 +1,10 @@
 from display import gameDisplay
 from utils import *
+from constants import *
+
+
+x = round(display_width / 1400, 2) * 64
+bullet_life = round(x)
 
 
 class Bullet:
@@ -7,7 +12,7 @@ class Bullet:
         self.x = x
         self.y = y
         self.dir = direction
-        self.life = 64
+        self.life = bullet_life
         self.size = size
         self.color = color
         self.damage = 10

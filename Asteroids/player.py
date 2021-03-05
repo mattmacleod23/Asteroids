@@ -20,7 +20,7 @@ class Player:
         self.rapid_fire_till = 0  # todo: make this based on the amount of rounds?
         self.matrix_till = 0   # todo: make this based on ticks?  Make this and on/off with M key?
         self.shields = starting_shields
-        self.missles = 0
+        self.missles = 1000
         self.target = None
         self.selected_weapon = BULLETS
         self.invi_dur = 120
@@ -72,11 +72,15 @@ class Player:
 
         # Rotate player
         self.dir += self.rtspd
-        self.select_missle_target(saucers)
+
+        if self.missles:
+            self.select_missle_target(saucers)
 
     def select_missle_target(self, saucers):
         if len(saucers):
             angle_differences = [angle_difference(self.dir, self, s) for s in saucers]
+            for i, s in enumerate(saucers):
+                s.angle_difference = angle_differences[i]
             min_ndx = angle_differences.index(min(angle_differences))
             saucer = saucers[min_ndx]
             saucer.color = red

@@ -2,8 +2,8 @@ import pygame
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument("-sw", "--width", required=False, type=int, default=1400)
-parser.add_argument("-sh", "--height", required=False, type=int, default=1000)
+parser.add_argument("-sw", "--width", required=False, type=int, default=2500)
+parser.add_argument("-sh", "--height", required=False, type=int, default=1400)
 args = parser.parse_args()
 
 # Initialize constants
