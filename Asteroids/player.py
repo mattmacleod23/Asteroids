@@ -2,11 +2,14 @@ from display import gameDisplay
 from utils import *
 from sounds import *
 import math
-from bullet import Bullet
+from bullet import Bullet, Missle, Nuke
 from time import time
 
 
 class Player:
+    player = None
+    dbg_data = ["dir"]
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -18,12 +21,16 @@ class Player:
         self.is_rapid_firing = False
         self.rapid_fire_rounds = 9
         self.rapid_fire_till = 0  # todo: make this based on the amount of rounds?
-        self.matrix_till = 0   # todo: make this based on ticks?  Make this and on/off with M key?
+        self.matrix_till = 0   # todo: make this based on ticks?  Make this an on/off with M key?
         self.shields = args.starting_shields
         self.missles = args.starting_missles
         self.target = None
         self.selected_weapon = BULLETS
         self.invi_dur = 120
+        self.player = self
+        self.size = 45
+        self.nukes = args.starting_nukes
+        self.rapid_fire_count = 0
 
     def is_hit_size(self, bullet):
         if self.shields:
@@ -33,10 +40,7 @@ class Player:
 
     @property
     def has_rapid_fire(self):
-        if time() < self.rapid_fire_till:
-            return True
-        else:
-            return False
+        return self.rapid_fire_count
 
     def updatePlayer(self, saucers):
         # Move player
@@ -101,16 +105,42 @@ class Player:
             if pos_diff < int(self.rapid_fire_rounds / 2):
                 pos_diff = pos_diff * -1
             bullets.append(Bullet(self.x, self.y, self.dir + pos_diff))
-            pygame.mixer.Sound.play(snd_fire)
+            play_sound(snd_fire)
         else:
             self.is_rapid_firing = False
             self.rapid_fire_rounds = 9
+            self.rapid_fire_count -= 1
+            if self.rapid_fire_count <= 0:
+                self.selected_weapon = BULLETS
 
         self.rapid_fire_rounds -= 1
 
     def handle_rapidfire(self, bullets):
         if self.is_rapid_firing:
             self.rapidfire(bullets)
+            
+    def fire_weapon(self, bullets):
+        if self.selected_weapon == RAPID_FIRE:
+            self.rapidfire(bullets)
+
+        elif self.missles and self.selected_weapon == MISSLES:
+            bullets.append(Missle(self.x, self.y, self.dir, saucer=self.target))
+            self.selected_weapon = MISSLES
+            self.missles -= 1
+            if self.missles == 0:
+                self.selected_weapon = BULLETS
+
+        elif self.selected_weapon == NUKES:
+            nukes = [b for b in bullets if type(b) is Nuke and not b.is_blowing_up]
+            if len(nukes):
+                nukes[0].blow_up()
+            else:
+                bullets.append(Nuke(self.x, self.y, self.dir))
+
+        else:
+            bullets.append(Bullet(self.x, self.y, self.dir))
+
+        play_sound(snd_fire)
 
     def drawPlayer(self):
         a = math.radians(self.dir)
@@ -150,6 +180,8 @@ class Player:
         if self.shields:
             pygame.draw.circle(gameDisplay, blue, (int(x), int(y)), shields_size, 1)
             drawText(str(self.shields), blue, int(x + (shields_size / 2) + 12), int(y + (shields_size / 2) + 12), 22)
+
+        draw_debug_info(self)
 
     def killPlayer(self):
         # Reset the player

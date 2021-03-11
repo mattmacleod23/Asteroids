@@ -31,7 +31,7 @@ class BonusDebris:
 
     @classmethod
     def play_sound(cls):
-        pygame.mixer.Sound.play(cls.sound, 3)
+        play_sound(cls.sound, 3)
 
     def updateDebris(self, saucer_debris):
         for v in range(len(self.vertices)):
@@ -73,10 +73,7 @@ class RapidFireDebris(BonusDebris):
         self.color = red
 
     def collect(self, player):
-        if player.rapid_fire_till > time():
-            player.rapid_fire_till += matrix_duration
-        else:
-            player.rapid_fire_till = time() + matrix_duration
+        player.rapid_fire_count += 6
 
 
 class ShieldDebris(BonusDebris):
@@ -105,6 +102,15 @@ class InvincibleDebris(BonusDebris):
 
     def collect(self, player):
         player.invi_dur += 30 * 10
+
+
+class NukeDebris(BonusDebris):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = yellow
+
+    def collect(self, player):
+        player.nukes += 3
 
 
 class SaucerDebrisFactory:

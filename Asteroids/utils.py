@@ -38,6 +38,10 @@ def distance(a, b):
     return abs(a.x - b.x) + abs(a.y - b.y)
 
 
+def real_distance(a, b):
+    return math.sqrt(((a.x - b.x)**2)+((a.y - b.y)**2))
+
+
 def angle_to(obj, obj2):
     return math.degrees(
         math.atan2(-obj.y + obj2.y, -obj.x + obj2.x))
@@ -69,6 +73,9 @@ def next_position_in(obj, speed):
 class safelist(list):
     def remove(self, x):
         try:
+            if hasattr(x, "can_remove"):
+                if not x.can_remove():
+                    return
             super().remove(x)
         except:
             pass
@@ -103,4 +110,24 @@ def blowUp(obj, player_pieces):
         deadPlayer(obj.x, obj.y, 2 * player_size / (2 * math.cos(math.atan(1 / 3)))))
     player_pieces.append(deadPlayer(obj.x, obj.y, player_size))
     player_pieces.append(deadPlayer(obj.x, obj.y, 2.23))
+
+
+def draw_debug_info(obj):
+    if hasattr(obj, "dbg_data") and args.debug:
+        offset = getattr(obj, "size", 5) + 5
+        y_off = offset
+        for attr in obj.dbg_data:
+            if type(attr) is str:
+                a, val = (str(attr), str(getattr(obj, attr)))
+            else:
+                a, func, arguments = attr
+                if args is None:
+                    val = func(getattr(obj, a))
+                else:
+                    val = func(getattr(obj, a, *arguments))
+
+            s = "{}: {}".format(a, val)
+
+            drawText(s, white, obj.x + offset, obj.y + y_off, 20)
+            y_off += 20
 

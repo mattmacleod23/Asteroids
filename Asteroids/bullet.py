@@ -31,20 +31,36 @@ class Bullet:
     def figure_damage(self, saucer):
         return self.damage
 
+    def handle_collision(self, saucer):
+        self.life = 0
+
+    def should_kill(self, saucer):
+        if isColliding(self.x, self.y, saucer.x, saucer.y, (saucer.size / 2) + self.size):
+            self.handle_collision(saucer)
+            if saucer.should_die(self):
+                return True
+
+    def can_remove(self):
+        return self.life <= 0
+
 
 class Missle(Bullet):
+    dbg_data = [("dir", round, (2,)), ("saucer_destination", round, (2,))]
+
     def __init__(self, *args, color=orange, saucer=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.target = saucer
         self.current_correction = .05
         self.color = color
+        self.saucer_destination = 0
 
     def draw(self):
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
+        draw_debug_info(self)
 
     def find_max_correction(self, saucer):
         dist = distance(self, saucer)
-        if dist < 700:
+        if dist < 1100:
             max_correction = max((700 - dist) / 1000, .82323)
             self.current_correction += (max_correction * 1.0032323)
             if dist < 100:
@@ -58,12 +74,13 @@ class Missle(Bullet):
 
     def correct_direction(self):
         dist = distance(self, self.target)
-        target_next_position = next_position_in(self.target, saucer_speed * (dist / 1500) * 60)
+        target_next_position = next_position_in(self.target, self.target.speed * (dist / 1500) * 60)
         target_next_position.draw()
         saucer_destination_angle = angle_to(self, target_next_position)
+        self.saucer_destination = saucer_destination_angle
         max_correction = self.find_max_correction(target_next_position)
 
-        angle_diff = abs(saucer_destination_angle - self.dir) % 180
+        angle_diff = abs(saucer_destination_angle - self.dir)
 
         change = min(angle_diff, max_correction)
 
@@ -83,6 +100,61 @@ class Missle(Bullet):
         if self.target:
             if self.life % 3 == 1:
                 self.correct_direction()
+
+
+nuke_life = 35
+
+
+class Nuke(Bullet):
+    dbg_data = ["kill_distance", "blow_up_life"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = light_green
+        self.size = 6
+        self.blow_up_life = nuke_life
+        self.is_blowing_up = False
+        self.blow_up_speed = 12
+        self.blow_up_distance = 140
+        self.kill_distance = 0
+
+    def blow_up(self):
+        self.is_blowing_up = True
+
+    def handle_explosion(self, saucers, player):
+        self.blow_up_life -= 1
+        self.size += 15.23
+
+    def updateBullet(self):
+        if not self.is_blowing_up:
+            super().updateBullet()
+        else:
+            self.draw()
+
+    def draw(self):
+        if self.is_blowing_up:
+            pygame.draw.circle(gameDisplay, light_green, (int(self.x), int(self.y)), int(self.size), int(min(self.size, 10)))
+            size = int(self.size)
+            for i in range(0, int(self.size / 2)):
+                x_offset = random.randint(size * -1, size)
+                y_offset = random.randint(size * -1, size)
+                x = self.x + x_offset
+                y = self.y + y_offset
+                l = random.randint(-20, 20)
+                l2 = random.randint(-20, 20)
+                if real_distance(self, point(x, y)) < size:
+                    pygame.draw.line(gameDisplay, red, (int(x), int(y)), (int(x) - l, int(y - l2)), 4)
+
+        else:
+            super().draw()
+
+        draw_debug_info(self)
+
+    def can_remove(self):
+        if self.blow_up_life <= 0:
+            return True
+        else:
+            return False
 
 
 class collectorBullet(Bullet):

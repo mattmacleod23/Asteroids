@@ -10,7 +10,7 @@ import math
 saucer_types = ["Small", "Large", "Boss"]
 # Create class saucer
 class Saucer:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.size = 15
         self.score = 10
         self.sound = snd_saucerB
@@ -27,7 +27,8 @@ class Saucer:
         self.color = orange
         self.bullet_size = 6
         self.angle_difference = 0
-        pygame.mixer.Sound.play(new_saucer)
+        self.speed = 5
+        play_sound(new_saucer)
 
         # Set random position
         self.x = random.choice((0, display_width))
@@ -61,8 +62,8 @@ class Saucer:
 
     def updateSaucer(self):
         # Move player
-        self.x += saucer_speed * math.cos(self.dir * math.pi / 180)
-        self.y += saucer_speed * math.sin(self.dir * math.pi / 180)
+        self.x += self.speed * math.cos(self.dir * math.pi / 180)
+        self.y += self.speed * math.sin(self.dir * math.pi / 180)
 
         # Choose random direction
         if random.randrange(0, 100) == 1:
@@ -88,7 +89,7 @@ class Saucer:
     def createSaucer(self):
         pass
 
-    def drawSaucer(self):
+    def drawSaucer(self, player):
         # Draw saucer
         pygame.draw.polygon(gameDisplay, self.color,
                             ((self.x + self.size, self.y),
@@ -105,30 +106,32 @@ class Saucer:
                              (self.x - self.size / 3, self.y - 2 * self.size / 3),
                              (self.x + self.size / 3, self.y - 2 * self.size / 3),
                              (self.x + self.size / 2, self.y - self.size / 3)), 1)
-        offset = ((self.size / 2) + 2.3)
-        drawText(str(round(self.angle_difference)), green, self.x - offset, self.y - offset, 20)
+
+        if player.missles:
+            offset = ((self.size / 2) + 6.623)
+            drawText(str(round(self.angle_difference)), red, self.x - offset, self.y - offset, 20)
 
 
 class SmallSaucer(Saucer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.score = 1000
-        self.size = 10
+        self.size = 12
 
     def shooting(self):
         super().shooting()
 
 
 class MediumSaucer(Saucer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self,  **kwargs):
+        super().__init__(**kwargs)
         self.score = 420
         self.size = 15
 
 
 class LargeSaucer(Saucer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.score = 200
         self.size = 20
 
@@ -137,8 +140,8 @@ class LargeSaucer(Saucer):
 
 
 class Battleship(Saucer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.score = 2500
         self.size = 50
         self.health = 100
@@ -150,8 +153,8 @@ class Battleship(Saucer):
         else:
             return False
 
-    def drawSaucer(self):
-        super().drawSaucer()
+    def drawSaucer(self, player):
+        super().drawSaucer(player)
         offset = ((self.size / 2) + 2.3)
         drawText(str(self.health), green, self.x + offset, self.y + offset, 20)
 
@@ -161,14 +164,22 @@ class SaucerFactory:
         self.saucer_num = 0
 
     def __call__(self, stage=1):
+        if stage > 1:
+            speed = 5
+        else:
+            change = random.randint(0, stage) * 2
+            speed = 5 + change
+
         self.saucer_num += 1
+
         if self.saucer_num % battleship_interval == 0:
-            return Battleship()
+            return Battleship(speed=speed)
 
         if not random.randint(0, 3):
-            return LargeSaucer()
+            return LargeSaucer(speed=speed)
         else:
             if not random.randint(0, 3):
-                return SmallSaucer()
+                return SmallSaucer(speed=speed)
             else:
-                return MediumSaucer()
+                return MediumSaucer(speed=speed)
+

@@ -6,10 +6,6 @@ from bullet import *
 from saucer import *
 from asteroid import *
 
-parser = ArgumentParser()
-parser.add_argument("-d", "--debug", help="Runs slower so its easier to debug shit", default=False)
-args, _ = parser.parse_known_args()
-
 
 pygame.init()
 
@@ -42,8 +38,9 @@ def gameLoop(startingState):
     saucer_debris = safelist()
     player_dying_delay = 0
     hyperspace = 0
-    next_level_delay = 0
-    bullet_capacity = 14
+    delay_between_levels = 45
+    next_level_delay = delay_between_levels
+    bullet_capacity = 20
     bullets = safelist()
     collector_bullets = safelist()
     asteroids = safelist()
@@ -53,7 +50,8 @@ def gameLoop(startingState):
     oneUp_multiplier = 1
     playOneUpSFX = 0
     intensity = 0
-    delay_between_levels = 45
+    min_asteroids = 4
+    saucers_this_stage = saucers_per_stage - 3  # we start with 3
 
     debris_factory = SaucerDebrisFactory()
     saucer_factory = SaucerFactory()
@@ -62,8 +60,11 @@ def gameLoop(startingState):
     saucers.append(Battleship())
     player = Player(display_width / 2, display_height / 2)
 
+    i = 0
+
     # Main loop
     while gameState != "Exit":
+        i += 1
         # Game menu
         while gameState == "Menu":
             gameDisplay.fill(black)
@@ -93,29 +94,23 @@ def gameLoop(startingState):
                     player.rtspd = player_max_rtspd
 
                 if event.key == pygame.K_SPACE and player_dying_delay == 0 \
-                        and (len(bullets) < bullet_capacity or player.has_rapid_fire):
-                    if player.has_rapid_fire and player.selected_weapon == BULLETS:
-                        player.rapidfire(bullets)
-                    else:
-                        if player.missles and player.selected_weapon == MISSLES:
-                            bullets.append(Missle(player.x, player.y, player.dir, saucer=player.target))
-                            player.selected_weapon = MISSLES
-                            player.missles -= 1
-                            if player.missles == 0:
-                                player.selected_weapon = BULLETS
-                        else:
-                            bullets.append(Bullet(player.x, player.y, player.dir))
-                        play_sound(snd_fire)
+                        and (len(bullets) < bullet_capacity or player.selected_weapon == RAPID_FIRE):
+                    player.fire_weapon(bullets)
 
                 if event.key == pygame.K_c and player_dying_delay == 0 and len(bullets) < bullet_capacity:
                     collector_bullets.append(collectorBullet(player.x, player.y, player.dir, color=blue))
                     play_sound(snd_fire)
 
-                if event.key == pygame.K_DOWN and player.missles > 0:
-                    if player.selected_weapon == BULLETS:
-                        player.selected_weapon = MISSLES
-                    else:
-                        player.selected_weapon = BULLETS
+                if event.key == pygame.K_DOWN:
+                    while 1:
+                        player.selected_weapon += 1
+                        if player.selected_weapon > len(weapons):
+                            player.selected_weapon = BULLETS
+                            break
+
+                        if getattr(player, weapons[player.selected_weapon]) > 0:
+                            player.selected_weapon = player.selected_weapon
+                            break
 
                 if gameState == "Game Over":
                     if event.key == pygame.K_r:
@@ -199,9 +194,9 @@ def gameLoop(startingState):
             f.updateDebris(saucer_debris)
 
         # Check for end of stage
-        if len(asteroids) == 0 and len(saucers) == 0:
-            if next_level_delay < delay_between_levels:
-                next_level_delay += 1
+        if len(asteroids) < min_asteroids and len(saucers) == 0 and saucers_this_stage <= 0:
+            if next_level_delay > 0:
+                next_level_delay -= 1
             else:
                 stage += 1
                 intensity = 0
@@ -212,30 +207,33 @@ def gameLoop(startingState):
                     while xTo - display_width / 2 < display_width / 4 and yTo - display_height / 2 < display_height / 4:
                         xTo = random.randrange(0, display_width)
                         yTo = random.randrange(0, display_height)
-                    asteroids.append(Asteroid(xTo, yTo, "Large"))
-                next_level_delay = 0
+
+                        if i % 2:
+                            asteroids.append(Asteroid(xTo, yTo, "Large"))
+
+                next_level_delay = delay_between_levels
+                saucers_this_stage = saucers_per_stage
+                min_asteroids += 2
 
         # Update intensity
         if intensity < stage * 450:
             intensity += 1
 
         # Saucer
-        if random.randint(0, 6000) <= (intensity * 2) / (stage * 9) and next_level_delay == 0 \
-                and len(saucers) < max_saucers:
-            if score < 40000:
-                saucers.append(saucer_factory(stage=stage))
-            else:
-                saucers.append(saucer_factory(stage=stage))
+        if random.randint(0, 4000) <= (intensity * 2) / (stage * 9) and next_level_delay == delay_between_levels \
+                and len(saucers) < max_saucers and saucers_this_stage:
+            saucers_this_stage -= 1
+            saucers.append(saucer_factory(stage=stage))
 
         else:
             for saucer in saucers:
                 saucer.set_direction(stage, player)
                 saucer.updateSaucer()
-                saucer.drawSaucer()
+                saucer.drawSaucer(player)
                 saucer.shooting()
 
                 # Check for collision w/ asteroid
-                for a in asteroids:
+                """for a in asteroids:
                     if isColliding(saucer.x, saucer.y, a.x, a.y, a.size + saucer.size):
                         # Set saucer state
                         saucer.is_alive = False
@@ -255,17 +253,16 @@ def gameLoop(startingState):
                         else:
                             # Play SFX
                             play_sound(snd_bangS)
-                        asteroids.remove(a)
+                        asteroids.remove(a)"""
 
                 # Check for collision w/ bullet
                 for b in bullets:
-                    if isColliding(b.x, b.y, saucer.x, saucer.y, (saucer.size / 2) + b.size):
-                        if saucer.should_die(b):
-                            score += saucer.score
-                            saucer.is_alive = False
-                            saucer_debris.append(debris_factory(b.x, b.y))
-                            saucer_debris.append(debris_factory(b.x, b.y))
-                            saucer_debris.append(debris_factory(b.x, b.y))
+                    if b.should_kill(saucer):
+                        score += saucer.score
+                        saucer.is_alive = False
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
 
                         play_sound(snd_bangL)
                         bullets.remove(b)
@@ -382,6 +379,8 @@ def gameLoop(startingState):
         for b in bullets:
             # Update bullets
             b.updateBullet()
+            if type(b) is Nuke and b.is_blowing_up:
+                b.handle_explosion(saucers, player)
 
             # Check for bullets collide w/ asteroid
             for a in asteroids:
@@ -405,18 +404,17 @@ def gameLoop(startingState):
                         play_sound(snd_bangS)
                     asteroids.remove(a)
                     bullets.remove(b)
-
                     break
 
             # Destroying bullets
-            if b.life <= 0:
+            if b.can_remove():
                 try:
                     bullets.remove(b)
                 except ValueError:
                     continue
 
         # Extra live
-        if score > oneUp_multiplier * 10000:
+        if score > oneUp_multiplier * 23000:
             oneUp_multiplier += 1
             live += 1
             playOneUpSFX = 60
@@ -446,18 +444,22 @@ def gameLoop(startingState):
             live = -1
 
         # draw score and power up levels
-        drawText(str(score), white, 60, 20, 40, False)
+        drawText("S{} - {}".format(stage - 5, score), white, 60, 20, 40, False)
 
         matrix_time_left = max(0, round(player.matrix_till - time(), 1))
         drawText("MATRIX - " + str(matrix_time_left), green, 260, 20, 35, False)
 
-        rapid_time_left = max(0, round(player.rapid_fire_till - time(), 1))
-        drawText("RapidF - " + str(rapid_time_left), red, 470, 20, 35, False)
+        on_off = "ON" if player.selected_weapon == RAPID_FIRE else "OFF"
+        drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 470, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == MISSLES else "OFF"
-        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 670, 20, 35, False)
+        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 720, 20, 35, False)
 
-        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1020, 20, 35, False)
+        on_off = "ON" if player.selected_weapon == NUKES else "OFF"
+        drawText("Nukes - {} - {}".format(str(player.nukes), on_off), light_green, 1050, 20, 35, False)
+
+        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1460, 20, 35, False)
+        drawText("Saucers Left - {}".format(saucers_this_stage), white, display_width - 280, 20, 35, False)
 
         # Draw Lives
         for l in range(live + 1):
@@ -473,7 +475,7 @@ def gameLoop(startingState):
             else:
                 timer.tick(30)
         else:
-            timer.tick(10)
+            timer.tick(args.debug)
 
 
 # Start game

@@ -1,4 +1,5 @@
 import pygame
+from constants import *
 
 pygame.init()
 
@@ -13,5 +14,5 @@ zap = pygame.mixer.Sound("Sounds/zap.wav")
 new_saucer = pygame.mixer.Sound("Sounds/new_saucer.wav")
 
 
-def play_sound(*args, **kwargs):
-    pygame.mixer.Sound.play(*args, **kwargs)
+def play_sound(*a, **kwargs):
+    pygame.mixer.Sound.play(*a, **kwargs)
