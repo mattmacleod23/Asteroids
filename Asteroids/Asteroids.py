@@ -260,11 +260,9 @@ def gameLoop(startingState):
                     if b.should_kill(saucer):
                         score += saucer.score
                         saucer.is_alive = False
-                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
-                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
-                        saucer_debris.append(debris_factory(saucer.x, saucer.y))
-
-                        play_sound(snd_bangL)
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y, saucer=saucer))
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y, saucer=saucer))
+                        saucer_debris.append(debris_factory(saucer.x, saucer.y, saucer=saucer))
                         bullets.remove(b)
 
                 # Check collision w/ player
@@ -384,7 +382,8 @@ def gameLoop(startingState):
 
             # Check for bullets collide w/ asteroid
             for a in asteroids:
-                if b.x > a.x - a.size and b.x < a.x + a.size and b.y > a.y - a.size and b.y < a.y + a.size:
+                if (b.x > a.x - b.size and b.x < a.x + b.size and b.y > a.y - b.size and b.y < a.y + b.size) or \
+                        (b.x > a.x - a.size and b.x < a.x + a.size and b.y > a.y - a.size and b.y < a.y + a.size):
                     # Split asteroid
                     if a.t == "Large":
                         asteroids.append(Asteroid(a.x, a.y, "Normal"))

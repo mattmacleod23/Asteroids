@@ -1,5 +1,6 @@
 from display import gameDisplay
 from utils import *
+from sounds import *
 from constants import *
 
 
@@ -37,6 +38,7 @@ class Bullet:
     def should_kill(self, saucer):
         if isColliding(self.x, self.y, saucer.x, saucer.y, (saucer.size / 2) + self.size):
             self.handle_collision(saucer)
+            play_sound(snd_bangL)
             if saucer.should_die(self):
                 return True
 
@@ -102,7 +104,7 @@ class Missle(Bullet):
                 self.correct_direction()
 
 
-nuke_life = 35
+nuke_life = 23
 
 
 class Nuke(Bullet):
@@ -123,7 +125,7 @@ class Nuke(Bullet):
 
     def handle_explosion(self, saucers, player):
         self.blow_up_life -= 1
-        self.size += 15.23
+        self.size += 20.23
 
     def updateBullet(self):
         if not self.is_blowing_up:
@@ -133,21 +135,20 @@ class Nuke(Bullet):
 
     def draw(self):
         if self.is_blowing_up:
-            pygame.draw.circle(gameDisplay, light_green, (int(self.x), int(self.y)), int(self.size), int(min(self.size, 10)))
             size = int(self.size)
-            for i in range(0, int(self.size / 2)):
+            for i in range(0, int(self.size * 3.523)):
                 x_offset = random.randint(size * -1, size)
                 y_offset = random.randint(size * -1, size)
                 x = self.x + x_offset
                 y = self.y + y_offset
-                l = random.randint(-20, 20)
-                l2 = random.randint(-20, 20)
+                l = random.randint(-17, 17)
+                l2 = random.randint(-17, 17)
                 if real_distance(self, point(x, y)) < size:
-                    pygame.draw.line(gameDisplay, red, (int(x), int(y)), (int(x) - l, int(y - l2)), 4)
+                    c = (random.randint(135, 255), random.randint(0, 196), random.randint(0, 10))
+                    pygame.draw.line(gameDisplay, c, (int(x), int(y)), (int(x) - l, int(y - l2)), 6)
 
         else:
             super().draw()
-
         draw_debug_info(self)
 
     def can_remove(self):

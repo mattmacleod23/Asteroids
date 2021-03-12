@@ -122,9 +122,11 @@ class Player:
     def fire_weapon(self, bullets):
         if self.selected_weapon == RAPID_FIRE:
             self.rapidfire(bullets)
+            play_sound(snd_fire)
 
         elif self.missles and self.selected_weapon == MISSLES:
             bullets.append(Missle(self.x, self.y, self.dir, saucer=self.target))
+            play_sound(missle)
             self.selected_weapon = MISSLES
             self.missles -= 1
             if self.missles == 0:
@@ -134,13 +136,14 @@ class Player:
             nukes = [b for b in bullets if type(b) is Nuke and not b.is_blowing_up]
             if len(nukes):
                 nukes[0].blow_up()
+                play_sound(nuke_explosion)
             else:
+                play_sound(nuke_launch)
                 bullets.append(Nuke(self.x, self.y, self.dir))
 
         else:
             bullets.append(Bullet(self.x, self.y, self.dir))
-
-        play_sound(snd_fire)
+            play_sound(snd_fire)
 
     def drawPlayer(self):
         a = math.radians(self.dir)

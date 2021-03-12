@@ -9,7 +9,11 @@ import math
 # Create class
 saucer_types = ["Small", "Large", "Boss"]
 # Create class saucer
+
+
 class Saucer:
+    dbg_data = ["speed"]
+
     def __init__(self, **kwargs):
         self.size = 15
         self.score = 10
@@ -27,7 +31,7 @@ class Saucer:
         self.color = orange
         self.bullet_size = 6
         self.angle_difference = 0
-        self.speed = 5
+        self.speed = kwargs.get("speed", 5)
         play_sound(new_saucer)
 
         # Set random position
@@ -111,6 +115,8 @@ class Saucer:
             offset = ((self.size / 2) + 6.623)
             drawText(str(round(self.angle_difference)), red, self.x - offset, self.y - offset, 20)
 
+        draw_debug_info(self)
+
 
 class SmallSaucer(Saucer):
     def __init__(self, **kwargs):
@@ -167,7 +173,7 @@ class SaucerFactory:
         if stage > 1:
             speed = 5
         else:
-            change = random.randint(0, stage) * 2
+            change = random.randint(stage - 2, stage + 2)
             speed = 5 + change
 
         self.saucer_num += 1

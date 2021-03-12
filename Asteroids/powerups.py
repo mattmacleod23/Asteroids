@@ -1,5 +1,6 @@
 from sounds import *
 from utils import *
+from saucer import *
 import random
 from time import time
 
@@ -110,15 +111,20 @@ class NukeDebris(BonusDebris):
         self.color = yellow
 
     def collect(self, player):
-        player.nukes += 3
+        player.nukes += 2
 
 
 class SaucerDebrisFactory:
     debris_types = [MatrixDebris, RapidFireDebris, ShieldDebris]
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, saucer=None, **kwargs):
+        if type(saucer) is Battleship:
+            if random.randint(0, 8) == 1:
+                return NukeDebris(*args, **kwargs)
+
         if random.randint(0, 15) == 1:
             return MissleDebris(*args, **kwargs)
+
         i = random.randint(0, len(self.debris_types) - 1)
         return self.debris_types[i](*args, **kwargs)
 
