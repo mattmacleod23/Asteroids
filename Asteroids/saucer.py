@@ -32,6 +32,9 @@ class Saucer:
         self.bullet_size = 6
         self.angle_difference = 0
         self.speed = kwargs.get("speed", 5)
+        self.shields = 0
+        self.shield_recharge_interval = 30 * 3
+        self.next_shield_recharge = self.shield_recharge_interval
         play_sound(new_saucer)
 
         # Set random position
@@ -115,7 +118,12 @@ class Saucer:
             offset = ((self.size / 2) + 6.623)
             drawText(str(round(self.angle_difference)), red, self.x - offset, self.y - offset, 20)
 
-        draw_debug_info(self)
+        if self.shields:
+            pygame.draw.circle(gameDisplay, blue, (int(self.x), int(self.y)), self.size * 1.323, 1)
+            drawText(str(self.shields), blue, int(self.x + (self.size / 2) + 12), int(self.y + (shields_size / 2) + 12), 22)
+
+        if args.debug:
+            draw_debug_info(self)
 
 
 class SmallSaucer(Saucer):
@@ -150,7 +158,7 @@ class Battleship(Saucer):
         super().__init__(**kwargs)
         self.score = 2500
         self.size = 50
-        self.health = 100
+        self.health = 50
 
     def should_die(self, bullet):
         self.health -= bullet.figure_damage(self)
@@ -165,6 +173,67 @@ class Battleship(Saucer):
         drawText(str(self.health), green, self.x + offset, self.y + offset, 20)
 
 
+blast_wind_up = 45
+blaster_size = 25
+blaster_speed = 3  # ratio
+
+
+class Boss(Battleship):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.score = 5000
+        self.size = 120
+        self.health = 200 + max((kwargs.get("stage", 5) - 5) * 100, 0)
+        self.max_shields = kwargs.get("max_shields", 20)
+        self.shields = self.max_shields
+        self.blaster_interval = 30 * kwargs.get("next_blaster_in", 4.5)
+        self.next_blaster_in = self.blaster_interval
+        self.blast_in = blast_wind_up
+
+    def shooting(self):
+        if self.cd == 0:
+            self.cd = random.randint(6, 10)
+            if random.randint(0, 1):
+                cannon = 60
+            else:
+                cannon = -60
+            self.bullets.append(Bullet(self.x + cannon, self.y, self.bdir, size=self.bullet_size))
+        else:
+            self.cd -= 1
+
+        self.next_blaster_in -= 1
+
+        if self.next_blaster_in <= 0 and not random.randint(0, 7) and self.blast_in == blast_wind_up:
+            self.blast_in -= 1
+            self.next_blaster_in = self.blaster_interval
+            play_sound(blast_charge, maxtime=int(blast_wind_up / 30) * 1700)
+
+        if self.blast_in < blast_wind_up:
+            self.blast_in -= 1
+
+        if self.blast_in == 0:
+            self.bullets.append(Bullet(self.x, self.y, self.bdir, size=blaster_size,
+                                       color=purple, speed=bullet_speed * blaster_speed,
+                                       life=bullet_life / blaster_speed))
+            play_sound(blast)
+            self.blast_in = blast_wind_up
+
+    def should_die(self, bullet):
+        if self.shields:
+            self.shields -= int(bullet.damage / 10)
+            play_sound(zap)
+        else:
+            return super().should_die(bullet)
+
+    def updateSaucer(self):
+        super().updateSaucer()
+        self.next_shield_recharge -= 1
+        if self.shields and self.shields < self.max_shields:
+            if self.next_shield_recharge <= 0:
+                self.shields += 1
+                self.next_shield_recharge = self.shield_recharge_interval
+
+
 class SaucerFactory:
     def __init__(self):
         self.saucer_num = 0
@@ -173,7 +242,7 @@ class SaucerFactory:
         if stage > 1:
             speed = 5
         else:
-            change = random.randint(stage - 2, stage + 2)
+            change = int(random.randint(stage - 2, stage + 4) / 2)
             speed = 5 + change
 
         self.saucer_num += 1

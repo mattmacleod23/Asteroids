@@ -31,6 +31,7 @@ class Player:
         self.size = 45
         self.nukes = args.starting_nukes
         self.rapid_fire_count = 0
+        self.draw_selected_weapon_time = 0
 
     def is_hit_size(self, bullet):
         if self.shields:
@@ -137,9 +138,12 @@ class Player:
             if len(nukes):
                 nukes[0].blow_up()
                 play_sound(nuke_explosion)
+                if self.nukes == 0:
+                    self.selected_weapon = BULLETS
             else:
                 play_sound(nuke_launch)
                 bullets.append(Nuke(self.x, self.y, self.dir))
+                self.nukes -= 1
 
         else:
             bullets.append(Bullet(self.x, self.y, self.dir))
@@ -184,6 +188,10 @@ class Player:
             pygame.draw.circle(gameDisplay, blue, (int(x), int(y)), shields_size, 1)
             drawText(str(self.shields), blue, int(x + (shields_size / 2) + 12), int(y + (shields_size / 2) + 12), 22)
 
+        if self.draw_selected_weapon_time:
+            drawText(str(weapons[self.selected_weapon]), white, x + 25, y - 25, 22)
+            self.draw_selected_weapon_time -= 1
+
         draw_debug_info(self)
 
     def killPlayer(self):
@@ -200,4 +208,9 @@ class Player:
         debris.collect(self)
         debris_list.remove(debris)
         debris.play_sound()
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+        if key == "selected_weapon":
+            self.draw_selected_weapon_time = 15
 

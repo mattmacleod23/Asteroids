@@ -4,26 +4,23 @@ from sounds import *
 from constants import *
 
 
-x = round(display_width / 1400, 2) * 64
-bullet_life = round(x)
-
-
 class Bullet:
-    def __init__(self, x, y, direction, size=3, color=red):
+    def __init__(self, x, y, direction, size=3, color=red, speed=bullet_speed, life=bullet_life):
         self.x = x
         self.y = y
         self.dir = direction
-        self.life = bullet_life
+        self.life = life
         self.size = size
         self.color = color
         self.damage = 10
+        self.speed = speed
 
     def draw(self):
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
 
     def updateBullet(self):
-        self.x += bullet_speed * math.cos(self.dir * math.pi / 180)
-        self.y += bullet_speed * math.sin(self.dir * math.pi / 180)
+        self.x += self.speed * math.cos(self.dir * math.pi / 180)
+        self.y += self.speed * math.sin(self.dir * math.pi / 180)
         self.draw()
         wrapper_check(self)
 
@@ -36,7 +33,12 @@ class Bullet:
         self.life = 0
 
     def should_kill(self, saucer):
-        if isColliding(self.x, self.y, saucer.x, saucer.y, (saucer.size / 2) + self.size):
+        if saucer.shields:
+            size = saucer.size * saucer_shield_size
+        else:
+            size = saucer.size / 2
+
+        if isColliding(self.x, self.y, saucer.x, saucer.y, size + self.size):
             self.handle_collision(saucer)
             play_sound(snd_bangL)
             if saucer.should_die(self):
@@ -55,6 +57,7 @@ class Missle(Bullet):
         self.current_correction = .05
         self.color = color
         self.saucer_destination = 0
+        self.damage = 20
 
     def draw(self):
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
@@ -82,7 +85,7 @@ class Missle(Bullet):
         self.saucer_destination = saucer_destination_angle
         max_correction = self.find_max_correction(target_next_position)
 
-        angle_diff = abs(saucer_destination_angle - self.dir)
+        angle_diff = abs(saucer_destination_angle - self.dir) % 180
 
         change = min(angle_diff, max_correction)
 
@@ -105,6 +108,32 @@ class Missle(Bullet):
 
 
 nuke_life = 23
+nuke_size_growth = 20.23
+
+
+def get_nuke_lines():
+    lines = []
+    c = (random.randint(135, 255), random.randint(0, 196), random.randint(0, 10))
+
+    for life, size in enumerate(range(0, int(nuke_life * nuke_size_growth), 20)):
+        p = point(0, 0)
+        life_lines = []
+        lines.append(life_lines)
+        for i in range(0, int(size * 2.23)):
+            x_offset = random.randint(size * -1, size)
+            y_offset = random.randint(size * -1, size)
+            l = random.randint(-23, 23)
+            l2 = random.randint(-23, 23)
+            if i % 4 == 0:
+                c = (random.randint(135, 255), random.randint(0, 196), random.randint(0, 10))
+            if real_distance(p, point(x_offset, y_offset)) < size:
+                life_lines.append((c, int(x_offset), int(y_offset), int(x_offset) - l,
+                                                                  int(y_offset - l2), random.randint(4, 8)))
+
+    return lines
+
+
+nuke_lines = [get_nuke_lines() for _ in range(0, 7)]
 
 
 class Nuke(Bullet):
@@ -119,9 +148,11 @@ class Nuke(Bullet):
         self.blow_up_speed = 12
         self.blow_up_distance = 140
         self.kill_distance = 0
+        self.blow_up_lines = None
 
     def blow_up(self):
         self.is_blowing_up = True
+        self.blow_up_lines = nuke_lines[random.randint(0, len(nuke_lines) - 1)]
 
     def handle_explosion(self, saucers, player):
         self.blow_up_life -= 1
@@ -135,20 +166,15 @@ class Nuke(Bullet):
 
     def draw(self):
         if self.is_blowing_up:
-            size = int(self.size)
-            for i in range(0, int(self.size * 3.523)):
-                x_offset = random.randint(size * -1, size)
-                y_offset = random.randint(size * -1, size)
-                x = self.x + x_offset
-                y = self.y + y_offset
-                l = random.randint(-17, 17)
-                l2 = random.randint(-17, 17)
-                if real_distance(self, point(x, y)) < size:
-                    c = (random.randint(135, 255), random.randint(0, 196), random.randint(0, 10))
-                    pygame.draw.line(gameDisplay, c, (int(x), int(y)), (int(x) - l, int(y - l2)), 6)
+            lines = self.blow_up_lines
+
+            for c, x_off, y_off, l, l2, width in lines[nuke_life - self.blow_up_life]:
+                pygame.draw.line(gameDisplay, c, (int(self.x + x_off), int(self.y + y_off)),
+                (int(self.x + l), int(self.y + l2)), width)
 
         else:
             super().draw()
+
         draw_debug_info(self)
 
     def can_remove(self):

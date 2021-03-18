@@ -5,9 +5,25 @@ from display import gameDisplay
 import random
 
 
+class TextHandler:
+    texts = {}
+
+    def __call__(self, size):
+        if size not in self.texts:
+            screen_text = pygame.font.SysFont("Calibri", size)
+            self.texts[size] = screen_text
+            return screen_text
+        else:
+            return self.texts[size]
+
+
+text_handler = TextHandler()
+
+
 # Create function to draw texts
 def drawText(msg, color, x, y, s, center=True):
-    screen_text = pygame.font.SysFont("Calibri", s).render(msg, True, color)
+    screen_text = text_handler(s).render(msg, True, color)
+
     if center:
         rect = screen_text.get_rect()
         rect.center = (x, y)
@@ -17,10 +33,18 @@ def drawText(msg, color, x, y, s, center=True):
 
 
 # Create funtion to chek for collision
-def isColliding(x, y, xTo, yTo, size):
-    if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
-        return True
-    return False
+def isColliding(x, y, xTo, yTo, size, r_distance=False):
+    if not r_distance:
+        if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
+            return True
+        return False
+
+    else:
+        p1 = point(x, y)
+        p2 = point(xTo, yTo)
+        if real_distance(p1, p2) <= size:
+            return True
+        return False
 
 
 def wrapper_check(obj):
@@ -71,9 +95,9 @@ def next_position_in(obj, speed):
 
 
 class safelist(list):
-    def remove(self, x):
+    def remove(self, x, force=False):
         try:
-            if hasattr(x, "can_remove"):
+            if hasattr(x, "can_remove") and not force:
                 if not x.can_remove():
                     return
             super().remove(x)

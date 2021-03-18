@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("-sw", "--width", required=False, type=int, default=2500)
-parser.add_argument("-sh", "--height", required=False, type=int, default=1400)
+parser.add_argument("-sh", "--height", required=False, type=int, default=1600)
 parser.add_argument("-ss", "--starting_shields", type=int, default=4)
 parser.add_argument("-sm", "--starting_missles", type=int, default=0)
 parser.add_argument("-sn", "--starting_nukes", type=int, default=0)
@@ -21,9 +21,13 @@ black = (0, 0, 0)
 orange = (255, 131, 0)
 yellow = (255, 216, 110)
 light_green = (185, 250, 208)
+purple = (182, 3, 252)
 
 display_width = args.width
 display_height = args.height
+
+x = round(display_width / 1400, 2) * 64
+bullet_life = round(x)
 
 player_size = 10
 saucer_debris_size = 23
@@ -36,9 +40,11 @@ saucer_speed = 5
 small_saucer_accuracy = 10
 matrix_duration = 10
 shields_size = 20
+saucer_shield_size = 1.323  # ratio
 starting_shields = 4
 max_saucers = args.max_saucers
 battleship_interval = 8
+bullet_capacity = 20
 saucers_per_stage = 8
 BULLETS = 1
 RAPID_FIRE = 2

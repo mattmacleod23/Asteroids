@@ -7,7 +7,7 @@ from time import time
 
 # Create class for shattered ship
 class BonusDebris:
-    sound = snd_extra
+    sound = collect
 
     def __init__(self, x, y, l=saucer_debris_size, **kwargs):
         self.angle = random.randrange(0, 360) * math.pi / 180

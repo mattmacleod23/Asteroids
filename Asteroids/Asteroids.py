@@ -5,6 +5,7 @@ from player import *
 from bullet import *
 from saucer import *
 from asteroid import *
+from time import time
 
 
 pygame.init()
@@ -29,6 +30,62 @@ timer = pygame.time.Clock()
 # freeze everything
 
 
+def handle_events(player, bullets, collector_bullets, gameState, hyperspace, player_dying_delay):
+    # Main loop
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            gameState = "Exit"
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                player.thrust = True
+
+            if event.key == pygame.K_LEFT:
+                player.rtspd = -player_max_rtspd
+
+            if event.key == pygame.K_RIGHT:
+                player.rtspd = player_max_rtspd
+
+            if event.key == pygame.K_SPACE and player_dying_delay == 0 \
+                    and (len(bullets) < bullet_capacity or player.selected_weapon == RAPID_FIRE):
+                player.fire_weapon(bullets)
+
+            if event.key == pygame.K_c and player_dying_delay == 0 and len(bullets) < bullet_capacity:
+                collector_bullets.append(collectorBullet(player.x, player.y, player.dir, color=blue))
+                play_sound(snd_fire)
+
+            if event.key == pygame.K_DOWN:
+                while 1:
+                    player.selected_weapon += 1
+                    if player.selected_weapon > len(weapons):
+                        player.selected_weapon = BULLETS
+                        break
+
+                    if getattr(player, weapons[player.selected_weapon]) > 0:
+                        player.selected_weapon = player.selected_weapon
+                        break
+
+            if gameState == "Game Over":
+                if event.key == pygame.K_r:
+                    gameState = "Exit"
+                    gameLoop("Playing")
+
+            if event.key == pygame.K_p:
+                if gameState == "Playing":
+                    gameState = "Paused"
+                else:
+                    gameState = "Playing"
+
+            if event.key == pygame.K_LSHIFT:
+                hyperspace = 30
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_UP:
+                player.thrust = False
+            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                player.rtspd = 0
+
+    return gameState, hyperspace
+
+
 def gameLoop(startingState):
     # Init variables
     gameState = startingState
@@ -40,7 +97,6 @@ def gameLoop(startingState):
     hyperspace = 0
     delay_between_levels = 45
     next_level_delay = delay_between_levels
-    bullet_capacity = 20
     bullets = safelist()
     collector_bullets = safelist()
     asteroids = safelist()
@@ -52,25 +108,28 @@ def gameLoop(startingState):
     intensity = 0
     min_asteroids = 4
     saucers_this_stage = saucers_per_stage - 3  # we start with 3
+    new_saucer_interval = 9 * 30
+    new_saucer_time = new_saucer_interval
 
     debris_factory = SaucerDebrisFactory()
     saucer_factory = SaucerFactory()
 
-    saucers = safelist([saucer_factory() for _ in range(0, 2)])
-    saucers.append(Battleship())
+    saucers = safelist([saucer_factory() for _ in range(0, 1)])
+    saucers.append(Boss())
     player = Player(display_width / 2, display_height / 2)
 
     i = 0
 
     # Main loop
     while gameState != "Exit":
+        start_time = time()
         i += 1
         # Game menu
         while gameState == "Menu":
             gameDisplay.fill(black)
             drawText("ROID RAGE", white, display_width / 2, display_height / 2, 100)
             drawText("Press any key to START", white, display_width / 2, display_height / 2 + 100, 50)
-            drawText("FUCK YOU", white, display_width / 2, display_height / 2 + 200, 50)
+            drawText("TURTLES", white, display_width / 2, display_height / 2 + 200, 50)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     gameState = "Exit"
@@ -80,50 +139,11 @@ def gameLoop(startingState):
             timer.tick(5)
 
         # User inputs
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                gameState = "Exit"
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    player.thrust = True
-
-                if event.key == pygame.K_LEFT:
-                    player.rtspd = -player_max_rtspd
-
-                if event.key == pygame.K_RIGHT:
-                    player.rtspd = player_max_rtspd
-
-                if event.key == pygame.K_SPACE and player_dying_delay == 0 \
-                        and (len(bullets) < bullet_capacity or player.selected_weapon == RAPID_FIRE):
-                    player.fire_weapon(bullets)
-
-                if event.key == pygame.K_c and player_dying_delay == 0 and len(bullets) < bullet_capacity:
-                    collector_bullets.append(collectorBullet(player.x, player.y, player.dir, color=blue))
-                    play_sound(snd_fire)
-
-                if event.key == pygame.K_DOWN:
-                    while 1:
-                        player.selected_weapon += 1
-                        if player.selected_weapon > len(weapons):
-                            player.selected_weapon = BULLETS
-                            break
-
-                        if getattr(player, weapons[player.selected_weapon]) > 0:
-                            player.selected_weapon = player.selected_weapon
-                            break
-
-                if gameState == "Game Over":
-                    if event.key == pygame.K_r:
-                        gameState = "Exit"
-                        gameLoop("Playing")
-
-                if event.key == pygame.K_LSHIFT:
-                    hyperspace = 30
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP:
-                    player.thrust = False
-                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                    player.rtspd = 0
+        gameState, hyperspace = handle_events(player, bullets, collector_bullets,
+                                              gameState, hyperspace, player_dying_delay)
+        if gameState == "Paused":
+            timer.tick(5)
+            continue
 
         # Update player
         player.updatePlayer(saucers)
@@ -212,18 +232,27 @@ def gameLoop(startingState):
                             asteroids.append(Asteroid(xTo, yTo, "Large"))
 
                 next_level_delay = delay_between_levels
-                saucers_this_stage = saucers_per_stage
+                saucers_this_stage = saucers_per_stage + int(stage / 2)
                 min_asteroids += 2
 
         # Update intensity
         if intensity < stage * 450:
             intensity += 1
 
+        new_saucer_time -= 1
+
         # Saucer
-        if random.randint(0, 4000) <= (intensity * 2) / (stage * 9) and next_level_delay == delay_between_levels \
-                and len(saucers) < max_saucers and saucers_this_stage:
-            saucers_this_stage -= 1
-            saucers.append(saucer_factory(stage=stage))
+        if random.randint(0, 3500) <= (intensity * 2) / (stage * 9) and next_level_delay == delay_between_levels \
+                and len(saucers) < max_saucers and saucers_this_stage and new_saucer_time < 0:
+            new_saucer_time = new_saucer_interval
+
+            if saucers_this_stage > 1:
+                saucers_this_stage -= 1
+                saucers.append(saucer_factory(stage=stage))
+            else:
+                if len(saucers) == 0:
+                    saucers_this_stage -= 1
+                    saucers.append(Boss(stage=stage))
 
         else:
             for saucer in saucers:
@@ -269,7 +298,7 @@ def gameLoop(startingState):
                 if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                     if player_state != "Died":
                         # Create ship fragments
-                        if player.shields >= 5 and type(saucer) is not Battleship:
+                        if player.shields >= 5 and type(saucer) not in (Battleship, Boss):
                             player.shields -= 5
                             blowUp(saucer, player_pieces)
                             saucer.is_alive = False
@@ -324,7 +353,7 @@ def gameLoop(startingState):
                             if player.shields:
                                 player.shields -= 1
                                 play_sound(zap)
-                                saucer.bullets.remove(b)
+                                saucer.bullets.remove(b, force=True)
                                 continue
 
                             # Create ship fragments
@@ -343,10 +372,13 @@ def gameLoop(startingState):
                                 gameState = "Game Over"
 
                             play_sound(snd_bangL)
-                            saucer.bullets.remove(b)
+                            saucer.bullets.remove(b, force=True)
 
                     if b.life <= 0:
-                        saucer.bullets.remove(b)
+                        try:
+                            saucer.bullets.remove(b, force=True)
+                        except ValueError:
+                            continue
 
         removable_saucers = [s for s in saucers if not s.is_alive]
 
@@ -377,6 +409,7 @@ def gameLoop(startingState):
         for b in bullets:
             # Update bullets
             b.updateBullet()
+
             if type(b) is Nuke and b.is_blowing_up:
                 b.handle_explosion(saucers, player)
 
@@ -467,6 +500,13 @@ def gameLoop(startingState):
             p.drawPlayer()
 
         pygame.display.update()
+
+        end_time = time()
+
+        loop_time = end_time - start_time
+
+        if loop_time > .02:
+            print("Slow")
 
         if not args.debug:
             if player.matrix_till > time():
