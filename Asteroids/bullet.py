@@ -5,22 +5,24 @@ from constants import *
 
 
 class Bullet:
-    def __init__(self, x, y, direction, size=3, color=red, speed=bullet_speed, life=bullet_life):
+    def __init__(self, x, y, direction, size=3, color=red, speed=bullet_speed, life=bullet_life, growth_rate=0, damage=1):
         self.x = x
         self.y = y
         self.dir = direction
         self.life = life
         self.size = size
         self.color = color
-        self.damage = 10
+        self.damage = 10 * damage
         self.speed = speed
+        self.growth_rate = growth_rate
 
     def draw(self):
-        pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
+        pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), int(self.size))
 
     def updateBullet(self):
         self.x += self.speed * math.cos(self.dir * math.pi / 180)
         self.y += self.speed * math.sin(self.dir * math.pi / 180)
+        self.size += self.growth_rate
         self.draw()
         wrapper_check(self)
 
@@ -85,7 +87,7 @@ class Missle(Bullet):
         self.saucer_destination = saucer_destination_angle
         max_correction = self.find_max_correction(target_next_position)
 
-        angle_diff = abs(saucer_destination_angle - self.dir) % 180
+        angle_diff = abs(saucer_destination_angle - self.dir)
 
         change = min(angle_diff, max_correction)
 

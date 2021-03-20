@@ -3,6 +3,7 @@ from display import gameDisplay
 from sounds import *
 import random
 from bullet import Bullet
+from player import Player
 import math
 
 
@@ -33,7 +34,7 @@ class Saucer:
         self.angle_difference = 0
         self.speed = kwargs.get("speed", 5)
         self.shields = 0
-        self.shield_recharge_interval = 30 * 3
+        self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
         self.next_shield_recharge = self.shield_recharge_interval
         play_sound(new_saucer)
 
@@ -92,6 +93,12 @@ class Saucer:
         acc = self.accuracy * 4 / stage
         self.bdir = math.degrees(
             math.atan2(-self.y + player.y, -self.x + player.x) + math.radians(random.uniform(acc, -acc)))
+
+    def set_smart_bdir(self, player, speed=1):
+        dist = real_distance(self, player)
+        target_next_position = next_position_in(player, ((player.speed / speed) * (dist / 1500)) * 60, obj_dir_attr="dest_dir")
+        target_next_position.draw()
+        self.bdir = angle_to(self, target_next_position)
 
     def createSaucer(self):
         pass
@@ -186,7 +193,7 @@ class Boss(Battleship):
         self.health = 200 + max((kwargs.get("stage", 5) - 5) * 100, 0)
         self.max_shields = kwargs.get("max_shields", 20)
         self.shields = self.max_shields
-        self.blaster_interval = 30 * kwargs.get("next_blaster_in", 4.5)
+        self.blaster_interval = 30 * kwargs.get("next_blaster_in", 6.5)
         self.next_blaster_in = self.blaster_interval
         self.blast_in = blast_wind_up
 
@@ -206,15 +213,16 @@ class Boss(Battleship):
         if self.next_blaster_in <= 0 and not random.randint(0, 7) and self.blast_in == blast_wind_up:
             self.blast_in -= 1
             self.next_blaster_in = self.blaster_interval
-            play_sound(blast_charge, maxtime=int(blast_wind_up / 30) * 1700)
+            play_sound(blast_charge, maxtime=int(blast_wind_up / 30) * 1823)
 
         if self.blast_in < blast_wind_up:
             self.blast_in -= 1
 
         if self.blast_in == 0:
+            self.set_smart_bdir(Player.player, speed=blaster_speed)
             self.bullets.append(Bullet(self.x, self.y, self.bdir, size=blaster_size,
                                        color=purple, speed=bullet_speed * blaster_speed,
-                                       life=bullet_life / blaster_speed))
+                                       life=bullet_life / blaster_speed, growth_rate=.423, damage=3))
             play_sound(blast)
             self.blast_in = blast_wind_up
 

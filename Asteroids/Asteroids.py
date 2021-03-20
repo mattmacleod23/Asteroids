@@ -77,6 +77,7 @@ def handle_events(player, bullets, collector_bullets, gameState, hyperspace, pla
 
             if event.key == pygame.K_LSHIFT:
                 hyperspace = 30
+
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_UP:
                 player.thrust = False
@@ -114,9 +115,11 @@ def gameLoop(startingState):
     debris_factory = SaucerDebrisFactory()
     saucer_factory = SaucerFactory()
 
-    saucers = safelist([saucer_factory() for _ in range(0, 1)])
-    saucers.append(Boss())
     player = Player(display_width / 2, display_height / 2)
+    Player.player = player
+
+    saucers = safelist([saucer_factory() for _ in range(0, 1)])
+    saucers.append(Battleship())
 
     i = 0
 
@@ -350,8 +353,8 @@ def gameLoop(startingState):
                     # Check for collision w/ player
                     if isColliding(player.x, player.y, b.x, b.y, player.is_hit_size(b)):
                         if player_state != "Died":
-                            if player.shields:
-                                player.shields -= 1
+                            if player.shields > 0:
+                                player.shields = int(max(player.shields - (b.damage / 10), 0))
                                 play_sound(zap)
                                 saucer.bullets.remove(b, force=True)
                                 continue

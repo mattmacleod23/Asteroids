@@ -93,7 +93,7 @@ class MissleDebris(BonusDebris):
         self.color = orange
 
     def collect(self, player):
-        player.missles += 5
+        player.missles += 3
 
 
 class InvincibleDebris(BonusDebris):

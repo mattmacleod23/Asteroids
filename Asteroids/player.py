@@ -16,6 +16,7 @@ class Player:
         self.hspeed = 0
         self.vspeed = 0
         self.dir = -90
+        self.dest_dir = 0
         self.rtspd = 0
         self.thrust = False
         self.is_rapid_firing = False
@@ -32,6 +33,7 @@ class Player:
         self.nukes = args.starting_nukes
         self.rapid_fire_count = 0
         self.draw_selected_weapon_time = 0
+        self.speed = 0
 
     def is_hit_size(self, bullet):
         if self.shields:
@@ -45,7 +47,7 @@ class Player:
 
     def updatePlayer(self, saucers):
         # Move player
-        speed = math.sqrt(self.hspeed**2 + self.vspeed**2)
+        self.speed = speed = math.sqrt(self.hspeed**2 + self.vspeed**2)
         if self.thrust:
             if speed + fd_fric < player_max_speed:
                 self.hspeed += fd_fric * math.cos(self.dir * math.pi / 180)
@@ -70,6 +72,8 @@ class Player:
             else:
                 self.hspeed = 0
                 self.vspeed = 0
+
+        self.dest_dir = angle_to(self, point(self.x + self.hspeed, self.y + self.vspeed))
         self.x += self.hspeed
         self.y += self.vspeed
 
@@ -184,7 +188,7 @@ class Player:
                              (x - (s * math.sqrt(5) / 4) * math.cos(-a + math.pi / 6),
                               y + (s * math.sqrt(5) / 4) * math.sin(-a + math.pi / 6)))
 
-        if self.shields:
+        if self.shields > 0:
             pygame.draw.circle(gameDisplay, blue, (int(x), int(y)), shields_size, 1)
             drawText(str(self.shields), blue, int(x + (shields_size / 2) + 12), int(y + (shields_size / 2) + 12), 22)
 

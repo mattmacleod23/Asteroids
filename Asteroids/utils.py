@@ -86,11 +86,12 @@ class point:
         pygame.draw.circle(gameDisplay, red, (int(self.x), int(self.y)), 10)
 
 
-def next_position_in(obj, speed):
+def next_position_in(obj, speed, obj_dir_attr="dir"):
+    dir = getattr(obj, obj_dir_attr)
     x = obj.x
     y = obj.y
-    x += speed * math.cos(obj.dir * math.pi / 180)
-    y += speed * math.sin(obj.dir * math.pi / 180)
+    x += speed * math.cos(dir * math.pi / 180)
+    y += speed * math.sin(dir * math.pi / 180)
     return point(x, y)
 
 
