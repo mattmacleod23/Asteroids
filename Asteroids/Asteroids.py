@@ -118,8 +118,8 @@ def gameLoop(startingState):
     player = Player(display_width / 2, display_height / 2)
     Player.player = player
 
-    saucers = safelist([saucer_factory() for _ in range(0, 1)])
-    saucers.append(Battleship())
+    saucers = safelist([saucer_factory() for _ in range(0, 0)])
+    saucers.append(Battleship(dodge_bullet_range=700, health=3000))
 
     i = 0
 
@@ -260,7 +260,7 @@ def gameLoop(startingState):
         else:
             for saucer in saucers:
                 saucer.set_direction(stage, player)
-                saucer.updateSaucer()
+                saucer.updateSaucer(bullets)
                 saucer.drawSaucer(player)
                 saucer.shooting()
 
@@ -482,7 +482,7 @@ def gameLoop(startingState):
         drawText("S{} - {}".format(stage - 5, score), white, 60, 20, 40, False)
 
         matrix_time_left = max(0, round(player.matrix_till - time(), 1))
-        drawText("MATRIX - " + str(matrix_time_left), green, 260, 20, 35, False)
+        drawText("MATRIX - " + str(matrix_time_left), green, 280, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == RAPID_FIRE else "OFF"
         drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 470, 20, 35, False)

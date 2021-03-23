@@ -12,6 +12,9 @@ saucer_types = ["Small", "Large", "Boss"]
 # Create class saucer
 
 
+no_dir_change_time = 30
+
+
 class Saucer:
     dbg_data = ["speed"]
 
@@ -36,6 +39,8 @@ class Saucer:
         self.shields = 0
         self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
         self.next_shield_recharge = self.shield_recharge_interval
+        self.dodge_bullet_range = kwargs.get("dodge_bullet_range", 0)
+        self.dont_change_dir = no_dir_change_time
         play_sound(new_saucer)
 
         # Set random position
@@ -68,14 +73,17 @@ class Saucer:
         pass
         # pygame.mixer.Sound.play(self.sound)
 
-    def updateSaucer(self):
+    def updateSaucer(self, bullets):
         # Move player
         self.x += self.speed * math.cos(self.dir * math.pi / 180)
         self.y += self.speed * math.sin(self.dir * math.pi / 180)
 
         # Choose random direction
-        if random.randrange(0, 100) == 1:
+        if random.randrange(0, 100) == 1 and self.dont_change_dir <= 0:
             self.dir = random.choice(self.dirchoice)
+
+        if self.dont_change_dir > 0:
+            self.dont_change_dir -= 1
 
         # Wrapping
         if self.y < 0:
@@ -86,6 +94,9 @@ class Saucer:
             self.x = display_width
         elif self.x > display_width:
             self.x = 0
+
+        if self.dodge_bullet_range and not random.randint(0, 3):
+            self.dodge(bullets)
 
         self.play_sound()
 
@@ -132,6 +143,38 @@ class Saucer:
         if args.debug:
             draw_debug_info(self)
 
+    def dodge(self, bullets):
+        dodgeables = []
+
+        for b in bullets:
+            dist = real_distance(self, b)
+            #bullet_angle_to_diff = abs(abs(angle_to(b, self)) % 360 - abs(b.dir) % 360)
+            saucer_next_position = next_position_in(self, self.speed * (dist / 1500) * 60)
+            if dist < self.dodge_bullet_range:
+                next_b = next_position_in(b, self.speed * (dist / 1500) * 300)
+                if colliding(next_b, saucer_next_position, size=self.size):
+                    dodgeables.append((b, dist, next_b, saucer_next_position))
+
+        if len(dodgeables):
+            for angle in range(0, 359, 7):
+                collision = False
+                for b, dist, b_next_pos, saucer_next_position in dodgeables:
+                    next_pos = next_position_in(self, self.speed * (dist / 1500) * 60, dir=angle)
+                    """next_pos.draw(color=white)
+                    b_next_pos.draw(color=red)
+                    b.draw()
+                    self.drawSaucer(Player.player)
+                    pygame.display.update()"""
+                    if colliding(b_next_pos, next_pos, size=self.size * 1.5):
+                        collision = True
+                        break
+
+                if not collision:
+                    print("dodge")
+                    self.dir = angle
+                    self.dont_change_dir = no_dir_change_time
+                    return
+
 
 class SmallSaucer(Saucer):
     def __init__(self, **kwargs):
@@ -165,7 +208,7 @@ class Battleship(Saucer):
         super().__init__(**kwargs)
         self.score = 2500
         self.size = 50
-        self.health = 50
+        self.health = kwargs.get("health", 80)
 
     def should_die(self, bullet):
         self.health -= bullet.figure_damage(self)
@@ -180,22 +223,24 @@ class Battleship(Saucer):
         drawText(str(self.health), green, self.x + offset, self.y + offset, 20)
 
 
-blast_wind_up = 45
-blaster_size = 25
-blaster_speed = 3  # ratio
+blast_wind_up = 47
+blaster_size = 23
+blaster_speed = 2.523  # ratio
 
 
 class Boss(Battleship):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        stage = kwargs.get("stage", 5)
         self.score = 5000
         self.size = 120
-        self.health = 200 + max((kwargs.get("stage", 5) - 5) * 100, 0)
-        self.max_shields = kwargs.get("max_shields", 20)
+        self.health = 200 + max((stage - 5) * 50, 0)
+        self.max_shields = kwargs.get("max_shields", 10 * int(stage - 5))
         self.shields = self.max_shields
         self.blaster_interval = 30 * kwargs.get("next_blaster_in", 6.5)
         self.next_blaster_in = self.blaster_interval
         self.blast_in = blast_wind_up
+        self.smart_aim_chance = kwargs.get("smart_aim_chance", 10)
 
     def shooting(self):
         if self.cd == 0:
@@ -204,6 +249,10 @@ class Boss(Battleship):
                 cannon = 60
             else:
                 cannon = -60
+
+            if not random.randint(0, self.smart_aim_chance):
+                self.set_smart_bdir(Player.player)
+
             self.bullets.append(Bullet(self.x + cannon, self.y, self.bdir, size=self.bullet_size))
         else:
             self.cd -= 1
@@ -227,14 +276,14 @@ class Boss(Battleship):
             self.blast_in = blast_wind_up
 
     def should_die(self, bullet):
-        if self.shields:
+        if self.shields > 0:
             self.shields -= int(bullet.damage / 10)
             play_sound(zap)
         else:
             return super().should_die(bullet)
 
-    def updateSaucer(self):
-        super().updateSaucer()
+    def updateSaucer(self, bullets):
+        super().updateSaucer(bullets)
         self.next_shield_recharge -= 1
         if self.shields and self.shields < self.max_shields:
             if self.next_shield_recharge <= 0:

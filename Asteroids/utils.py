@@ -47,6 +47,12 @@ def isColliding(x, y, xTo, yTo, size, r_distance=False):
         return False
 
 
+def colliding(a, b, size=None):
+    if size is None:
+        size = max(a.size, b.size)
+    return isColliding(a.x, a.y, b.x, b.y, size)
+
+
 def wrapper_check(obj):
     if obj.x > display_width:
         obj.x = 0
@@ -78,16 +84,18 @@ def angle_difference(dir, obj, obj2):
 
 
 class point:
-    def __init__(self, x, y):
+    def __init__(self, x, y, size=1):
         self.x = x
         self.y = y
+        self.size = size
 
-    def draw(self):
-        pygame.draw.circle(gameDisplay, red, (int(self.x), int(self.y)), 10)
+    def draw(self, color=red):
+        pygame.draw.circle(gameDisplay, color, (int(self.x), int(self.y)), 10)
 
 
-def next_position_in(obj, speed, obj_dir_attr="dir"):
-    dir = getattr(obj, obj_dir_attr)
+def next_position_in(obj, speed, obj_dir_attr="dir", dir=None):
+    if not dir:
+        dir = getattr(obj, obj_dir_attr)
     x = obj.x
     y = obj.y
     x += speed * math.cos(dir * math.pi / 180)
@@ -142,6 +150,10 @@ def draw_debug_info(obj):
         offset = getattr(obj, "size", 5) + 5
         y_off = offset
         for attr in obj.dbg_data:
+            if attr == "id":
+                drawText(str(id(obj)), white, obj.x + offset, obj.y + y_off, 20)
+                continue
+
             if type(attr) is str:
                 a, val = (str(attr), str(getattr(obj, attr)))
             else:

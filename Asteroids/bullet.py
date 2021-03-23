@@ -5,6 +5,8 @@ from constants import *
 
 
 class Bullet:
+    #dbg_data = ["x", "y"]
+
     def __init__(self, x, y, direction, size=3, color=red, speed=bullet_speed, life=bullet_life, growth_rate=0, damage=1):
         self.x = x
         self.y = y
@@ -18,6 +20,7 @@ class Bullet:
 
     def draw(self):
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), int(self.size))
+        draw_debug_info(self)
 
     def updateBullet(self):
         self.x += self.speed * math.cos(self.dir * math.pi / 180)
