@@ -3,6 +3,7 @@ import math
 from constants import *
 from display import gameDisplay
 import random
+import weakref
 
 
 class TextHandler:
@@ -15,6 +16,16 @@ class TextHandler:
             return screen_text
         else:
             return self.texts[size]
+
+
+class Displayable:
+    displayables = []
+
+    def register_displayable(self):
+        self.displayables.append(weakref.ref(self))
+
+    def update_display(self):
+        pygame.display.update()
 
 
 text_handler = TextHandler()

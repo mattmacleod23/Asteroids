@@ -12,7 +12,7 @@ saucer_types = ["Small", "Large", "Boss"]
 # Create class saucer
 
 
-no_dir_change_time = 30
+no_dir_change_time = 50
 
 
 class Saucer:
@@ -36,10 +36,11 @@ class Saucer:
         self.bullet_size = 6
         self.angle_difference = 0
         self.speed = kwargs.get("speed", 5)
-        self.shields = 0
+        self.shields = kwargs.get("shields", 0)
         self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
         self.next_shield_recharge = self.shield_recharge_interval
         self.dodge_bullet_range = kwargs.get("dodge_bullet_range", 0)
+        self.finesse = kwargs.get("finesse", 0)  # dodging ability
         self.dont_change_dir = no_dir_change_time
         play_sound(new_saucer)
 
@@ -95,13 +96,15 @@ class Saucer:
         elif self.x > display_width:
             self.x = 0
 
-        if self.dodge_bullet_range and not random.randint(0, 3):
+        chance = min(300 - self.finesse, 300)
+
+        if self.finesse and not random.randint(0, chance):
             self.dodge(bullets)
 
         self.play_sound()
 
     def set_direction(self, stage, player):
-        acc = self.accuracy * 4 / stage
+        acc = (self.accuracy * 4) / (stage + 4)
         self.bdir = math.degrees(
             math.atan2(-self.y + player.y, -self.x + player.x) + math.radians(random.uniform(acc, -acc)))
 
@@ -160,17 +163,12 @@ class Saucer:
                 collision = False
                 for b, dist, b_next_pos, saucer_next_position in dodgeables:
                     next_pos = next_position_in(self, self.speed * (dist / 1500) * 60, dir=angle)
-                    """next_pos.draw(color=white)
-                    b_next_pos.draw(color=red)
-                    b.draw()
-                    self.drawSaucer(Player.player)
-                    pygame.display.update()"""
+
                     if colliding(b_next_pos, next_pos, size=self.size * 1.5):
                         collision = True
                         break
 
                 if not collision:
-                    print("dodge")
                     self.dir = angle
                     self.dont_change_dir = no_dir_change_time
                     return
@@ -234,8 +232,8 @@ class Boss(Battleship):
         stage = kwargs.get("stage", 5)
         self.score = 5000
         self.size = 120
-        self.health = 200 + max((stage - 5) * 50, 0)
-        self.max_shields = kwargs.get("max_shields", 10 * int(stage - 5))
+        self.health = 200 + max(stage * 50, 0)
+        self.max_shields = kwargs.get("max_shields", 10 * stage)
         self.shields = self.max_shields
         self.blaster_interval = 30 * kwargs.get("next_blaster_in", 6.5)
         self.next_blaster_in = self.blaster_interval
@@ -299,19 +297,20 @@ class SaucerFactory:
         if stage > 1:
             speed = 5
         else:
-            change = int(random.randint(stage - 2, stage + 4) / 2)
+            change = int(random.randint(stage, stage + 6) / 2)
             speed = 5 + change
 
         self.saucer_num += 1
 
         if self.saucer_num % battleship_interval == 0:
-            return Battleship(speed=speed)
+            finesse = min((stage * 5) + 10, 100)
+            return Battleship(speed=speed, finesse=finesse, dodge_bullet_range=700)
 
         if not random.randint(0, 3):
             return LargeSaucer(speed=speed)
         else:
             if not random.randint(0, 3):
-                return SmallSaucer(speed=speed)
+                return SmallSaucer(speed=speed, finesse=stage + 2)
             else:
                 return MediumSaucer(speed=speed)
 

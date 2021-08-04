@@ -6,6 +6,15 @@ from bullet import *
 from saucer import *
 from asteroid import *
 from time import time
+import psutil
+import os
+
+
+# set priority
+p = psutil.Process(os.getpid())
+p.nice(psutil.HIGH_PRIORITY_CLASS)
+#affinity_mask = {0, 1}
+#os.sched_setaffinity(0, affinity_mask)
 
 
 pygame.init()
@@ -101,7 +110,7 @@ def gameLoop(startingState):
     bullets = safelist()
     collector_bullets = safelist()
     asteroids = safelist()
-    stage = 6
+    stage = 1
     score = 0
     live = 2
     oneUp_multiplier = 1
@@ -119,7 +128,7 @@ def gameLoop(startingState):
     Player.player = player
 
     saucers = safelist([saucer_factory() for _ in range(0, 0)])
-    saucers.append(Battleship(dodge_bullet_range=700, health=3000))
+    saucers.append(Battleship(dodge_bullet_range=700, health=100, finesse=20))
 
     i = 0
 
@@ -235,7 +244,7 @@ def gameLoop(startingState):
                             asteroids.append(Asteroid(xTo, yTo, "Large"))
 
                 next_level_delay = delay_between_levels
-                saucers_this_stage = saucers_per_stage + int(stage / 2)
+                saucers_this_stage = saucers_per_stage + int((stage * 2) / 2)
                 min_asteroids += 2
 
         # Update intensity
@@ -479,7 +488,7 @@ def gameLoop(startingState):
             live = -1
 
         # draw score and power up levels
-        drawText("S{} - {}".format(stage - 5, score), white, 60, 20, 40, False)
+        drawText("S{} - {}".format(stage, score), white, 60, 20, 40, False)
 
         matrix_time_left = max(0, round(player.matrix_till - time(), 1))
         drawText("MATRIX - " + str(matrix_time_left), green, 280, 20, 35, False)
@@ -502,13 +511,19 @@ def gameLoop(startingState):
             p.shields = 0
             p.drawPlayer()
 
-        pygame.display.update()
+        t1 = time()
+        pygame.display.flip()
+        t2 = time()
+        diff = t2 - t1
+
+        if diff > 0.0017:
+            print("Slow display update {}".format(diff))
 
         end_time = time()
 
         loop_time = end_time - start_time
 
-        if loop_time > .02:
+        if loop_time > 0.033333333333:
             print("Slow")
 
         if not args.debug:
