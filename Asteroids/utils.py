@@ -8,6 +8,7 @@ import weakref
 
 class TextHandler:
     texts = {}
+    rectangles = []
 
     def __call__(self, size):
         if size not in self.texts:
@@ -18,16 +19,6 @@ class TextHandler:
             return self.texts[size]
 
 
-class Displayable:
-    displayables = []
-
-    def register_displayable(self):
-        self.displayables.append(weakref.ref(self))
-
-    def update_display(self):
-        pygame.display.update()
-
-
 text_handler = TextHandler()
 
 
@@ -35,12 +26,68 @@ text_handler = TextHandler()
 def drawText(msg, color, x, y, s, center=True):
     screen_text = text_handler(s).render(msg, True, color)
 
-    if center:
-        rect = screen_text.get_rect()
-        rect.center = (x, y)
-    else:
-        rect = (x, y)
+    rect = screen_text.get_rect()
+    rect.center = (x, y)
+
     gameDisplay.blit(screen_text, rect)
+    rect = pygame.Rect(rect)
+    rect.center = (x - 2, y - 2)
+    rect.width += 4
+    rect.height += 4
+    text_handler.rectangles.append(rect)
+
+#todo: if an object goes through the top or bottom of the screen and gets deleted the rectangle for the
+# previous position is no longer going to be drawn back over.  Which is why power ups and big bullets get stuck on the
+# borders of the screen.  Need to be able to add the previous and current position of the objects to the previous rectangles
+# list to be able to clear its old and current position.
+class Displayable:
+    displayables = []
+    prev_rectangles = []
+
+    def register_displayable(self):
+        self.displayables.append(weakref.ref(self))
+
+    @property
+    def display_size(self):
+        return self.size
+
+    @staticmethod
+    def get_rect(obj):
+        size = obj.display_size
+        return pygame.Rect(obj.x - (size * .7), obj.y - (size * .7),
+                           size * 1.4, size * 1.4)
+
+    @classmethod
+    def update_display(cls):
+        rectangles = []
+        removables = []
+
+        for ref in cls.displayables:
+            obj = ref()
+
+            if obj is not None:
+                rectangles.append(cls.get_rect(obj))
+            else:
+                removables.append(ref)
+
+        for r in removables:
+            cls.displayables.remove(r)
+
+        pygame.display.update(rectangles)
+        for r in text_handler.rectangles:
+            pygame.display.update(r)
+            
+        pygame.display.update(cls.prev_rectangles)
+
+        cls.prev_rectangles = rectangles
+        cls.prev_rectangles.extend(text_handler.rectangles)
+        text_handler.rectangles = []
+
+    def __del__(self):
+        rect = self.get_rect(self)
+        surface = pygame.Surface((rect.w, rect.w))
+        gameDisplay.blit(surface, rect)
+        self.prev_rectangles.append(rect)
 
 
 # Create funtion to chek for collision

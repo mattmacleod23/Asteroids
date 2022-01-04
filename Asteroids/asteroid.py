@@ -3,7 +3,7 @@ from utils import *
 import random
 
 
-class Asteroid:
+class Asteroid(Displayable):
     def __init__(self, x, y, t):
         self.x = x
         self.y = y
@@ -27,6 +27,7 @@ class Asteroid:
             self.vertices.append([dist, full_circle])
             dist = random.uniform(self.size / 2, self.size)
             full_circle += random.uniform(18, 36)
+        self.register_displayable()
 
     def updateAsteroid(self):
         self.x += self.speed * math.cos(self.dir)
@@ -46,3 +47,6 @@ class Asteroid:
                              (self.x + next_v[0] * math.cos(next_v[1] * math.pi / 180),
                               self.y + next_v[0] * math.sin(next_v[1] * math.pi / 180)))
 
+    @property
+    def display_size(self):
+        return self.size * 1.9

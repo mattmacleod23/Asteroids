@@ -4,7 +4,7 @@ from sounds import *
 from constants import *
 
 
-class Bullet:
+class Bullet(Displayable):
     #dbg_data = ["x", "y"]
 
     def __init__(self, x, y, direction, size=3, color=red, speed=bullet_speed, life=bullet_life, growth_rate=0, damage=1):
@@ -17,6 +17,7 @@ class Bullet:
         self.damage = 10 * damage
         self.speed = speed
         self.growth_rate = growth_rate
+        self.register_displayable()
 
     def draw(self):
         pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), int(self.size))
@@ -51,6 +52,10 @@ class Bullet:
 
     def can_remove(self):
         return self.life <= 0
+
+    @property
+    def display_size(self):
+        return self.size * 1.7
 
 
 class Missle(Bullet):

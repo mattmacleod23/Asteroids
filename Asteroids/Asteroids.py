@@ -71,6 +71,7 @@ def handle_events(player, bullets, collector_bullets, gameState, hyperspace, pla
 
                     if getattr(player, weapons[player.selected_weapon]) > 0:
                         player.selected_weapon = player.selected_weapon
+                        player.draw_selected_weapon_time = 15
                         break
 
             if gameState == "Game Over":
@@ -233,7 +234,7 @@ def gameLoop(startingState):
                 stage += 1
                 intensity = 0
                 # Spawn asteroid away of center
-                for i in range(stage):
+                for i in range(stage * 3):
                     xTo = display_width / 2
                     yTo = display_height / 2
                     while xTo - display_width / 2 < display_width / 4 and yTo - display_height / 2 < display_height / 4:
@@ -494,7 +495,7 @@ def gameLoop(startingState):
         drawText("MATRIX - " + str(matrix_time_left), green, 280, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == RAPID_FIRE else "OFF"
-        drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 470, 20, 35, False)
+        drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 490, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == MISSLES else "OFF"
         drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 720, 20, 35, False)
@@ -502,21 +503,23 @@ def gameLoop(startingState):
         on_off = "ON" if player.selected_weapon == NUKES else "OFF"
         drawText("Nukes - {} - {}".format(str(player.nukes), on_off), light_green, 1050, 20, 35, False)
 
-        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1460, 20, 35, False)
+        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1360, 20, 35, False)
         drawText("Saucers Left - {}".format(saucers_this_stage), white, display_width - 280, 20, 35, False)
 
         # Draw Lives
         for l in range(live + 1):
-            p = Player(75 + l * 25, 75)
+            #todo: stop instantiating a whole player just to draw the life
+            p = Player(75 + l * 25, 75, displayable=False)
             p.shields = 0
             p.drawPlayer()
 
         t1 = time()
-        pygame.display.flip()
+        Displayable.update_display()
+        #pygame.display.flip()
         t2 = time()
         diff = t2 - t1
 
-        if diff > 0.0017:
+        if diff > 0.004:
             print("Slow display update {}".format(diff))
 
         end_time = time()

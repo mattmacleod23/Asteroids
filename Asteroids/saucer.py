@@ -15,8 +15,9 @@ saucer_types = ["Small", "Large", "Boss"]
 no_dir_change_time = 50
 
 
-class Saucer:
+class Saucer(Displayable):
     dbg_data = ["speed"]
+    shields_size = 1.323
 
     def __init__(self, **kwargs):
         self.size = 15
@@ -37,6 +38,7 @@ class Saucer:
         self.angle_difference = 0
         self.speed = kwargs.get("speed", 5)
         self.shields = kwargs.get("shields", 0)
+        self.had_shields = True if self.shields else False
         self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
         self.next_shield_recharge = self.shield_recharge_interval
         self.dodge_bullet_range = kwargs.get("dodge_bullet_range", 0)
@@ -58,6 +60,7 @@ class Saucer:
 
         # Reset bullet cooldown
         self.cd = 40 + random.randint(7, 23)
+        self.register_displayable()
 
     def shooting(self):
         if self.cd == 0:
@@ -140,8 +143,11 @@ class Saucer:
             drawText(str(round(self.angle_difference)), red, self.x - offset, self.y - offset, 20)
 
         if self.shields:
+            self.had_shields = True
             pygame.draw.circle(gameDisplay, blue, (int(self.x), int(self.y)), self.size * 1.323, 1)
             drawText(str(self.shields), blue, int(self.x + (self.size / 2) + 12), int(self.y + (shields_size / 2) + 12), 22)
+        else:
+            self.had_shields = False
 
         if args.debug:
             draw_debug_info(self)
@@ -172,6 +178,13 @@ class Saucer:
                     self.dir = angle
                     self.dont_change_dir = no_dir_change_time
                     return
+
+    @property
+    def display_size(self):
+        if self.had_shields:
+            return self.size * 2.5
+        else:
+            return self.size * 1.7
 
 
 class SmallSaucer(Saucer):
@@ -207,13 +220,18 @@ class Battleship(Saucer):
         self.score = 2500
         self.size = 50
         self.health = kwargs.get("health", 80)
+        self.shields = kwargs.get("shields", 20)
 
     def should_die(self, bullet):
-        self.health -= bullet.figure_damage(self)
-        if self.health <= 0:
-            return True
+        if self.shields > 0:
+            self.shields -= int(bullet.damage / 10)
+            play_sound(zap)
         else:
-            return False
+            self.health -= bullet.figure_damage(self)
+            if self.health <= 0:
+                return True
+            else:
+                return False
 
     def drawSaucer(self, player):
         super().drawSaucer(player)

@@ -6,11 +6,11 @@ from bullet import Bullet, Missle, Nuke
 from time import time
 
 
-class Player:
+class Player(Displayable):
     player = None
     dbg_data = ["dir"]
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, displayable=True):
         self.x = x
         self.y = y
         self.hspeed = 0
@@ -34,6 +34,8 @@ class Player:
         self.rapid_fire_count = 0
         self.draw_selected_weapon_time = 0
         self.speed = 0
+        if displayable:
+            self.register_displayable()
 
     def is_hit_size(self, bullet):
         if self.shields:
@@ -213,8 +215,8 @@ class Player:
         debris_list.remove(debris)
         debris.play_sound()
 
-    def __setattr__(self, key, value):
+    """def __setattr__(self, key, value):
         super().__setattr__(key, value)
         if key == "selected_weapon":
-            self.draw_selected_weapon_time = 15
+            self.draw_selected_weapon_time = 15"""
 

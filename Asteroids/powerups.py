@@ -6,7 +6,7 @@ from time import time
 
 
 # Create class for shattered ship
-class BonusDebris:
+class BonusDebris(Displayable):
     sound = collect
 
     def __init__(self, x, y, l=saucer_debris_size, **kwargs):
@@ -29,6 +29,7 @@ class BonusDebris:
             self.vertices.append([dist, full_circle])
             dist = random.uniform(self.size / 4, self.size)
             full_circle += random.uniform(23, 36)
+        self.register_displayable()
 
     @classmethod
     def play_sound(cls):
@@ -54,6 +55,10 @@ class BonusDebris:
         self.life -= 1
         if not self.life:
             saucer_debris.remove(self)
+
+    @property
+    def display_size(self):
+        return self.size * 1.8
 
 
 class MatrixDebris(BonusDebris):
