@@ -207,3 +207,14 @@ class collectorBullet(Bullet):
 
         self.life -= 1
 
+    def __setattr__(self, key, value):
+        if key == "x" and getattr(self, "x", None) is not None:
+            self.prev_x = self.x
+        elif key == "y" and getattr(self, "y", None) is not None:
+            self.prev_y = self.y
+            self.prev_rectangles.append(self.get_rect(self, self.prev_x, self.prev_y))
+            rect = self.get_rect(self, self.prev_x, self.prev_y)
+            pygame.draw.rect(gameDisplay, black, rect, 2)
+            pygame.display.update(rect)
+
+        self.__dict__[key] = value

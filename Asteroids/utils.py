@@ -4,6 +4,7 @@ from constants import *
 from display import gameDisplay
 import random
 import weakref
+from collections import defaultdict
 
 
 class TextHandler:
@@ -36,6 +37,7 @@ def drawText(msg, color, x, y, s, center=True):
     rect.height += 4
     text_handler.rectangles.append(rect)
 
+
 #todo: if an object goes through the top or bottom of the screen and gets deleted the rectangle for the
 # previous position is no longer going to be drawn back over.  Which is why power ups and big bullets get stuck on the
 # borders of the screen.  Need to be able to add the previous and current position of the objects to the previous rectangles
@@ -43,19 +45,28 @@ def drawText(msg, color, x, y, s, center=True):
 class Displayable:
     displayables = []
     prev_rectangles = []
+    types = defaultdict(list)
 
     def register_displayable(self):
         self.displayables.append(weakref.ref(self))
+        if len(self.displayables) > 150:
+            bad = True
+        t = type(self)
+        self.types[t].append(weakref.ref(self))
 
     @property
     def display_size(self):
         return self.size
 
     @staticmethod
-    def get_rect(obj):
-        size = obj.display_size
-        return pygame.Rect(obj.x - (size * .7), obj.y - (size * .7),
-                           size * 1.4, size * 1.4)
+    def get_rect(obj, x=None, y=None):
+        size = getattr(obj, "display_size", 1)
+        if x is None:
+            return pygame.Rect(obj.x - (size * .7), obj.y - (size * .7),
+                               size * 1.4, size * 1.4)
+        else:
+            return pygame.Rect(x - (size * .7), y - (size * .7),
+                               size * 1.4, size * 1.4)
 
     @classmethod
     def update_display(cls):
@@ -76,12 +87,29 @@ class Displayable:
         pygame.display.update(rectangles)
         for r in text_handler.rectangles:
             pygame.display.update(r)
-            
+
         pygame.display.update(cls.prev_rectangles)
 
-        cls.prev_rectangles = rectangles
+        cls.prev_rectangles.clear()
         cls.prev_rectangles.extend(text_handler.rectangles)
+        cls.save_previous_rects()
         text_handler.rectangles = []
+
+    """def __setattr__(self, key, value):
+        if key == "x" and getattr(self, "x", None) is not None:
+            self.prev_x = self.x
+        elif key == "y" and getattr(self, "y", None) is not None:
+            self.prev_y = self.y
+            self.prev_rectangles.append(self.get_rect(self, self.prev_x, self.prev_y))
+
+        self.__dict__[key] = value"""
+
+    @classmethod
+    def save_previous_rects(cls):
+        for ref in cls.displayables:
+            d = ref()
+            if d is not None:
+                cls.prev_rectangles.append(d.get_rect(d))
 
     def __del__(self):
         rect = self.get_rect(self)

@@ -149,13 +149,13 @@ def gameLoop(startingState):
                 if event.type == pygame.KEYDOWN:
                     gameState = "Playing"
             pygame.display.update()
-            timer.tick(5)
+            timer.tick_busy_loop(5)
 
         # User inputs
         gameState, hyperspace = handle_events(player, bullets, collector_bullets,
                                               gameState, hyperspace, player_dying_delay)
         if gameState == "Paused":
-            timer.tick(5)
+            timer.tick_busy_loop(5)
             continue
 
         # Update player
@@ -513,29 +513,29 @@ def gameLoop(startingState):
             p.shields = 0
             p.drawPlayer()
 
+        end_time = time()
+
+        loop_time = end_time - start_time
+
+        if loop_time > 0.044333333333:
+            print("Slow - {}".format(loop_time))
+
+        if not args.debug:
+            if player.matrix_till > time():
+                timer.tick_busy_loop(18)
+            else:
+                timer.tick_busy_loop(30)
+        else:
+            timer.tick_busy_loop(args.debug)
+
         t1 = time()
         Displayable.update_display()
-        #pygame.display.flip()
+        # pygame.display.flip()
         t2 = time()
         diff = t2 - t1
 
         if diff > 0.004:
             print("Slow display update {}".format(diff))
-
-        end_time = time()
-
-        loop_time = end_time - start_time
-
-        if loop_time > 0.033333333333:
-            print("Slow")
-
-        if not args.debug:
-            if player.matrix_till > time():
-                timer.tick(18)
-            else:
-                timer.tick(30)
-        else:
-            timer.tick(args.debug)
 
 
 # Start game
