@@ -38,6 +38,25 @@ def drawText(msg, color, x, y, s, center=True):
     text_handler.rectangles.append(rect)
 
 
+#def get a rectangle that doesnt go off the screen
+def get_safe_rect(x, y, width, height):
+    if x > display_width:
+        x = display_width - 1
+    if x < 0:
+        x = 1
+    if y > display_height:
+        y = display_height - 1
+    if y < 0:
+        y = 1
+
+    if x + width > display_width:
+        width = display_width - x - 1
+
+    if y + height > display_height:
+        height = display_height - y - 1
+
+    return pygame.Rect(x, y, width, height)
+
 #todo: if an object goes through the top or bottom of the screen and gets deleted the rectangle for the
 # previous position is no longer going to be drawn back over.  Which is why power ups and big bullets get stuck on the
 # borders of the screen.  Need to be able to add the previous and current position of the objects to the previous rectangles
@@ -62,10 +81,19 @@ class Displayable:
     def get_rect(obj, x=None, y=None):
         size = getattr(obj, "display_size", 1)
         if x is None:
-            return pygame.Rect(obj.x - (size * .7), obj.y - (size * .7),
+            return get_safe_rect(obj.x - (size * .7), obj.y - (size * .7),
                                size * 1.4, size * 1.4)
         else:
-            return pygame.Rect(x - (size * .7), y - (size * .7),
+            """if x > display_width:
+                x = display_width - 1
+            if x < 0:
+                x = 1
+            if y > display_height:
+                y = display_height - 1
+            if y < 0:
+                y = 1"""
+
+            return get_safe_rect(x - (size * .7), y - (size * .7),
                                size * 1.4, size * 1.4)
 
     @classmethod
@@ -196,6 +224,7 @@ class safelist(list):
                 if not x.can_remove():
                     return
             super().remove(x)
+            del x
         except:
             pass
 

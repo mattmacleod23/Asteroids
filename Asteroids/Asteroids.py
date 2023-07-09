@@ -234,15 +234,14 @@ def gameLoop(startingState):
                 stage += 1
                 intensity = 0
                 # Spawn asteroid away of center
-                for i in range(stage * 3):
+                while len(asteroids) < min_asteroids:
                     xTo = display_width / 2
                     yTo = display_height / 2
                     while xTo - display_width / 2 < display_width / 4 and yTo - display_height / 2 < display_height / 4:
                         xTo = random.randrange(0, display_width)
                         yTo = random.randrange(0, display_height)
 
-                        if i % 2:
-                            asteroids.append(Asteroid(xTo, yTo, "Large"))
+                        asteroids.append(Asteroid(xTo, yTo, "Large"))
 
                 next_level_delay = delay_between_levels
                 saucers_this_stage = saucers_per_stage + int((stage * 2) / 2)
@@ -498,7 +497,7 @@ def gameLoop(startingState):
         drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 490, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == MISSLES else "OFF"
-        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 720, 20, 35, False)
+        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 750, 20, 35, False)
 
         on_off = "ON" if player.selected_weapon == NUKES else "OFF"
         drawText("Nukes - {} - {}".format(str(player.nukes), on_off), light_green, 1050, 20, 35, False)

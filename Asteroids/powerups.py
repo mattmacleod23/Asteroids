@@ -36,6 +36,11 @@ class BonusDebris(Displayable):
         play_sound(cls.sound, 3)
 
     def updateDebris(self, saucer_debris):
+        self.x += self.speed * math.cos(self.dir)
+        self.y += self.speed * math.sin(self.dir)
+
+        wrapper_check(self)
+
         for v in range(len(self.vertices)):
             if v == len(self.vertices) - 1:
                 next_v = self.vertices[0]
@@ -47,10 +52,6 @@ class BonusDebris(Displayable):
                              (self.x + next_v[0] * math.cos(next_v[1] * math.pi / 180),
                               self.y + next_v[0] * math.sin(next_v[1] * math.pi / 180)))
         self.angle += self.rtspd
-        self.x += self.speed * math.cos(self.dir)
-        self.y += self.speed * math.sin(self.dir)
-
-        wrapper_check(self)
 
         self.life -= 1
         if not self.life:
@@ -58,7 +59,7 @@ class BonusDebris(Displayable):
 
     @property
     def display_size(self):
-        return self.size * 1.8
+        return self.size * 1.9
 
 
 class MatrixDebris(BonusDebris):

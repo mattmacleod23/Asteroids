@@ -27,8 +27,8 @@ class Bullet(Displayable):
         self.x += self.speed * math.cos(self.dir * math.pi / 180)
         self.y += self.speed * math.sin(self.dir * math.pi / 180)
         self.size += self.growth_rate
-        self.draw()
         wrapper_check(self)
+        self.draw()
 
         self.life -= 1
 
@@ -202,12 +202,12 @@ class collectorBullet(Bullet):
         if self.life % 6 == 1:
             self.size += 1
 
-        pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
         wrapper_check(self)
+        pygame.draw.circle(gameDisplay, self.color, (int(self.x), int(self.y)), self.size)
 
         self.life -= 1
 
-    def __setattr__(self, key, value):
+    """def __setattr__(self, key, value):
         if key == "x" and getattr(self, "x", None) is not None:
             self.prev_x = self.x
         elif key == "y" and getattr(self, "y", None) is not None:
@@ -217,4 +217,4 @@ class collectorBullet(Bullet):
             pygame.draw.rect(gameDisplay, black, rect, 2)
             pygame.display.update(rect)
 
-        self.__dict__[key] = value
+        self.__dict__[key] = value"""
