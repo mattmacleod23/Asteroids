@@ -42,7 +42,7 @@ class Saucer(Displayable):
         self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
         self.next_shield_recharge = self.shield_recharge_interval
         self.dodge_bullet_range = kwargs.get("dodge_bullet_range", 0)
-        self.finesse = kwargs.get("finesse", 0)  # dodging ability
+        self.finesse = int(kwargs.get("finesse", 0) * args.finesse_multiplier)  # dodging ability
         self.dont_change_dir = no_dir_change_time
         play_sound(new_saucer)
 
@@ -100,6 +100,9 @@ class Saucer(Displayable):
             self.x = 0
 
         chance = min(300 - self.finesse, 300)
+
+        if chance < 1:
+            chance = 1
 
         if self.finesse and not random.randint(0, chance):
             self.dodge(bullets)

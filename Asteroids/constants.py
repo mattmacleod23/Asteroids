@@ -9,6 +9,7 @@ parser.add_argument("-sm", "--starting_missles", type=int, default=0)
 parser.add_argument("-sn", "--starting_nukes", type=int, default=0)
 parser.add_argument("-ms", "--max_saucers", type=int, default=4)
 parser.add_argument("-d", "--debug", help="Runs slower so its easier to debug shit", default=0, type=int)
+parser.add_argument("-fm", "--finesse_multiplier", type=float, default=1)
 
 args, _ = parser.parse_known_args()
 
