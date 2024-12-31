@@ -95,20 +95,16 @@ class Missle(Bullet):
         self.saucer_destination = saucer_destination_angle
         max_correction = self.find_max_correction(target_next_position)
 
-        angle_diff = abs(saucer_destination_angle - self.dir)
+        angle_diff = (saucer_destination_angle - self.dir + 360) % 360
+        if angle_diff > 180:
+            angle_diff -= 360
 
-        change = min(angle_diff, max_correction)
+        change = min(abs(angle_diff), max_correction)
 
-        adding_angle = self.dir + change
-        sub_angle = self.dir - change
-
-        adding_angle_diff = abs((adding_angle % 360) - (saucer_destination_angle % 360))
-        sub_angle_diff = abs((sub_angle % 360) - (saucer_destination_angle % 360))
-
-        if adding_angle_diff > sub_angle_diff:
-            self.dir = sub_angle
+        if angle_diff > 0:
+            self.dir = (self.dir + change) % 360
         else:
-            self.dir = adding_angle
+            self.dir = (self.dir - change) % 360
 
     def updateBullet(self):
         super().updateBullet()
