@@ -157,30 +157,44 @@ class Saucer(Displayable):
 
     def dodge(self, bullets):
         dodgeables = []
+        time_to_impact = 0
 
         for b in bullets:
             dist = real_distance(self, b)
-            #bullet_angle_to_diff = abs(abs(angle_to(b, self)) % 360 - abs(b.dir) % 360)
-            saucer_next_position = next_position_in(self, self.speed * (dist / 1500) * 60)
+            relative_speed = math.hypot(
+                self.speed * math.cos(math.radians(self.dir)) - b.speed * math.cos(math.radians(b.dir)),
+                self.speed * math.sin(math.radians(self.dir)) - b.speed * math.sin(math.radians(b.dir)))
+            time_to_impact = dist / relative_speed if relative_speed != 0 else float('inf')
+            saucer_next_position = next_position_in(self, self.speed * time_to_impact)
             if dist < self.dodge_bullet_range:
-                next_b = next_position_in(b, self.speed * (dist / 1500) * 300)
+                next_b = next_position_in(b, b.speed * time_to_impact)
                 if colliding(next_b, saucer_next_position, size=self.size):
                     dodgeables.append((b, dist, next_b, saucer_next_position))
 
         if len(dodgeables):
+            best_angle = None
+            min_bullet_density = float('inf')
             for angle in range(0, 359, 7):
                 collision = False
+                bullet_density = 0
                 for b, dist, b_next_pos, saucer_next_position in dodgeables:
-                    next_pos = next_position_in(self, self.speed * (dist / 1500) * 60, dir=angle)
+                    next_pos = next_position_in(self, self.speed * time_to_impact, dir=angle)
 
                     if colliding(b_next_pos, next_pos, size=self.size * 1.5):
                         collision = True
                         break
 
-                if not collision:
-                    self.dir = angle
-                    self.dont_change_dir = no_dir_change_time
-                    return
+                    # Calculate bullet density in the vicinity
+                    bullet_density += 1 / (real_distance(next_pos, b_next_pos) + 1)
+
+                if not collision and bullet_density < min_bullet_density:
+                    min_bullet_density = bullet_density
+                    best_angle = angle
+
+            if best_angle is not None:
+                self.dir = best_angle
+                self.dont_change_dir = no_dir_change_time
+                return
 
     @property
     def display_size(self):
@@ -311,24 +325,25 @@ class Boss(Battleship):
 
 
 class SaucerFactory:
-    def __init__(self):
+    def __init__(self, difficulty=1):
         self.saucer_num = 0
+        self.difficulty = difficulty
 
     def __call__(self, stage=1):
-        if stage > 1:
-            speed = 5
+        if stage < 1:
+            speed = 5 * self.difficulty
         else:
-            change = int(random.randint(stage, stage + 6) / 2)
+            change = int(random.randint(stage, stage + 6) / 2 * self.difficulty)
             speed = 5 + change
 
         self.saucer_num += 1
 
         if self.saucer_num % battleship_interval == 0:
-            finesse = min((stage * 5) + 10, 100)
+            finesse = int(min((stage * 5) + 10 * self.difficulty, 100))
             return Battleship(speed=speed, finesse=finesse, dodge_bullet_range=700)
 
         if not random.randint(0, 3):
-            return LargeSaucer(speed=speed)
+            return LargeSaucer(speed=speed, finesse=0 if stage < 3 else (stage * 2 * self.difficulty))
         else:
             if not random.randint(0, 3):
                 return SmallSaucer(speed=speed, finesse=stage + 2)

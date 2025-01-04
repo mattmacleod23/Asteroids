@@ -10,6 +10,7 @@ import psutil
 import os
 
 
+
 # set priority
 p = psutil.Process(os.getpid())
 p.nice(psutil.HIGH_PRIORITY_CLASS)
@@ -97,6 +98,48 @@ def handle_events(player, bullets, collector_bullets, gameState, hyperspace, pla
     return gameState, hyperspace
 
 
+# Game menu
+difficulty_levels = {
+    "Easy": 0.07,
+    "Normal": 1.0,
+    "Hard": 1.3
+}
+
+
+def menu(selected_difficulty):
+    gameState = "Menu"
+    difficulties = ["Easy", "Normal", "Hard"]
+    selected_index = difficulties.index(selected_difficulty)
+
+    gameDisplay.fill(black)
+    drawText("ROID RAGE", white, display_width / 2, display_height / 2, 100)
+    drawText("Press SPACE to START", white, display_width / 2, display_height / 2 + 100, 50)
+
+    for i, difficulty in enumerate(difficulties):
+        color = white
+        if i == selected_index:
+            pygame.draw.rect(gameDisplay, white,
+                             (display_width / 2 - 150, display_height / 2 + 200 + i * 50 - 25, 300, 50), 2)
+        drawText(f"{difficulty}", color, display_width / 2, display_height / 2 + 200 + i * 50, 50)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            gameState = "Exit"
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                selected_index = (selected_index - 1) % len(difficulties)
+            elif event.key == pygame.K_DOWN:
+                selected_index = (selected_index + 1) % len(difficulties)
+            elif event.key == pygame.K_SPACE:
+                gameState = "Playing"
+
+    selected_difficulty = difficulties[selected_index]
+    pygame.display.update()
+    timer.tick_busy_loop(30)
+
+    return gameState, difficulty_levels.get(selected_difficulty), selected_difficulty
+
+
 def gameLoop(startingState):
     # Init variables
     gameState = startingState
@@ -122,8 +165,17 @@ def gameLoop(startingState):
     new_saucer_interval = 9 * 30
     new_saucer_time = new_saucer_interval
 
+    difficulty, selected_difficulty = 1, "Normal"
+
+    while gameState == "Menu":
+        gameState, difficulty, selected_difficulty = menu(selected_difficulty)
+
+    # blank out the middle of the screen
+    gameDisplay.fill(black)
+    pygame.display.update()
+
+    saucer_factory = SaucerFactory(difficulty=difficulty)
     debris_factory = SaucerDebrisFactory()
-    saucer_factory = SaucerFactory()
 
     player = Player(display_width / 2, display_height / 2)
     Player.player = player
@@ -133,23 +185,20 @@ def gameLoop(startingState):
 
     i = 0
 
+
+
     # Main loop
     while gameState != "Exit":
         start_time = time()
         i += 1
-        # Game menu
+
         while gameState == "Menu":
-            gameDisplay.fill(black)
-            drawText("ROID RAGE", white, display_width / 2, display_height / 2, 100)
-            drawText("Press any key to START", white, display_width / 2, display_height / 2 + 100, 50)
-            drawText("TURTLES", white, display_width / 2, display_height / 2 + 200, 50)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    gameState = "Exit"
-                if event.type == pygame.KEYDOWN:
-                    gameState = "Playing"
-            pygame.display.update()
-            timer.tick_busy_loop(5)
+            gameState, difficulty, selected_difficulty = menu(selected_difficulty)
+            if gameState != "Menu":
+                saucer_factory = SaucerFactory(difficulty=difficulty)
+                # blank out the middle of the screen
+                gameDisplay.fill(black)
+                pygame.display.update()
 
         # User inputs
         gameState, hyperspace = handle_events(player, bullets, collector_bullets,
@@ -166,8 +215,8 @@ def gameLoop(startingState):
             player.invi_dur -= 1
         elif hyperspace == 0:
             player_state = "Alive"
-
-        # Reset display
+   
+        # Reset display     
         gameDisplay.fill(black)
 
         # Hyperspace
@@ -505,12 +554,7 @@ def gameLoop(startingState):
         drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1360, 20, 35, False)
         drawText("Saucers Left - {}".format(saucers_this_stage), white, display_width - 280, 20, 35, False)
 
-        # Draw Lives
-        for l in range(live + 1):
-            #todo: stop instantiating a whole player just to draw the life
-            p = Player(75 + l * 25, 75, displayable=False)
-            p.shields = 0
-            p.drawPlayer()
+        drawText(f"Lives: {live + 1}", white, 75, 75, 35, False)
 
         end_time = time()
 
