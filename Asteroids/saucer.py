@@ -141,14 +141,14 @@ class Saucer(Displayable):
                              (self.x + self.size / 3, self.y - 2 * self.size / 3),
                              (self.x + self.size / 2, self.y - self.size / 3)), 1)
 
-        if player.missles:
+        if player.selected_weapon == MISSLES:
             offset = ((self.size / 2) + 6.623)
             drawText(str(round(self.angle_difference)), red, self.x - offset, self.y - offset, 20)
 
-        if self.shields:
+        if self.shields > 0:
             self.had_shields = True
             pygame.draw.circle(gameDisplay, blue, (int(self.x), int(self.y)), self.size * 1.323, 1)
-            drawText(str(self.shields), blue, int(self.x + (self.size / 2) + 12), int(self.y + (shields_size / 2) + 12), 22)
+            drawText(str(self.shields), blue, int(self.x + (shields_size / 2) + 20), int(self.y + (shields_size / 2) + 20), 22)
         else:
             self.had_shields = False
 
@@ -238,6 +238,8 @@ class Battleship(Saucer):
         self.size = 50
         self.health = kwargs.get("health", 80)
         self.shields = kwargs.get("shields", 20)
+        self.max_shields = self.shields
+        self.shield_recharge_interval = kwargs.get("shield_recharge_interval", 30 * 2)
 
     def should_die(self, bullet):
         if self.shields > 0:
@@ -254,6 +256,14 @@ class Battleship(Saucer):
         super().drawSaucer(player)
         offset = ((self.size / 2) + 2.3)
         drawText(str(self.health), green, self.x + offset, self.y + offset, 20)
+
+    def updateSaucer(self, bullets):
+        super().updateSaucer(bullets)
+        self.next_shield_recharge -= 1
+        if self.shields and self.shields < self.max_shields:
+            if self.next_shield_recharge <= 0:
+                self.shields += 1
+                self.next_shield_recharge = self.shield_recharge_interval
 
 
 blast_wind_up = 47
@@ -315,13 +325,38 @@ class Boss(Battleship):
         else:
             return super().should_die(bullet)
 
-    def updateSaucer(self, bullets):
-        super().updateSaucer(bullets)
-        self.next_shield_recharge -= 1
-        if self.shields and self.shields < self.max_shields:
-            if self.next_shield_recharge <= 0:
-                self.shields += 1
-                self.next_shield_recharge = self.shield_recharge_interval
+
+class Sniper(Battleship):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.score = 1500
+        self.size = 30
+        self.accuracy = 0.95  # Higher accuracy for sniper
+        self.shields = kwargs.get("shields", 10)
+        self.shield_recharge_interval = 30 * 2
+        self.bullet_speed = 1.23
+
+    def set_smart_bdir(self, player, bullet_speed):
+        # Calculate the distance between the sniper and the player
+        dist = real_distance(self, player)
+
+        # Calculate the time it will take for the bullet to reach the player
+        time_to_reach = dist / bullet_speed
+
+        # Calculate the future position of the player
+        future_x = player.x + player.hspeed * time_to_reach
+        future_y = player.y + player.vspeed * time_to_reach
+
+        # Calculate the angle to the future position
+        self.bdir = math.degrees(math.atan2(future_y - self.y, future_x - self.x))
+
+    def shooting(self):
+        if self.cd == 0:
+            self.set_smart_bdir(Player.player, bullet_speed * self.bullet_speed)
+            self.bullets.append(Bullet(self.x, self.y, self.bdir, size=self.bullet_size, speed=bullet_speed * self.bullet_speed))
+            self.cd = self.fire_frames + random.randint(-4, 4)
+        else:
+            self.cd -= 1
 
 
 class SaucerFactory:
@@ -337,6 +372,9 @@ class SaucerFactory:
             speed = 5 + change
 
         self.saucer_num += 1
+
+        if stage > 3 and self.saucer_num % 12 == 0:
+            return Sniper(speed=speed, finesse=(stage * 2 * self.difficulty))
 
         if self.saucer_num % battleship_interval == 0:
             finesse = int(min((stage * 5) + 10 * self.difficulty, 100))

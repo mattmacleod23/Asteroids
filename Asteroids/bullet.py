@@ -39,7 +39,7 @@ class Bullet(Displayable):
         self.life = 0
 
     def should_kill(self, saucer):
-        if saucer.shields:
+        if saucer.shields > 0:
             size = saucer.size * saucer_shield_size
         else:
             size = saucer.size / 2
@@ -188,6 +188,45 @@ class Nuke(Bullet):
             return True
         else:
             return False
+
+
+class Laser(Bullet):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = purple
+        self.speed = bullet_speed * 3
+        self.damage = 30
+        self.size = 35
+        self.life = self.life / 3
+        self.register_displayable()
+
+    def draw(self):
+        end_x = self.x + self.size * math.cos(self.dir * math.pi / 180)
+        end_y = self.y + self.size * math.sin(self.dir * math.pi / 180)
+        pygame.draw.line(gameDisplay, self.color, (int(self.x), int(self.y)), (int(end_x), int(end_y)), 2)
+        draw_debug_info(self)
+
+    def updateBullet(self):
+        self.x += self.speed * math.cos(self.dir * math.pi / 180)
+        self.y += self.speed * math.sin(self.dir * math.pi / 180)
+        wrapper_check(self)
+        self.draw()
+        self.life -= 1
+
+    def can_remove(self):
+        return self.life <= 0
+
+    def should_kill(self, saucer):
+        if saucer.shields > 0:
+            size = saucer.size * saucer_shield_size
+        else:
+            size = saucer.size / 2
+
+        if isColliding(self.x, self.y, saucer.x, saucer.y, size + self.size / 2.5):
+            self.handle_collision(saucer)
+            play_sound(snd_bangL)
+            if saucer.should_die(self):
+                return True
 
 
 class collectorBullet(Bullet):

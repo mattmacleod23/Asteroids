@@ -10,6 +10,7 @@ parser.add_argument("-sn", "--starting_nukes", type=int, default=0)
 parser.add_argument("-ms", "--max_saucers", type=int, default=4)
 parser.add_argument("-d", "--debug", help="Runs slower so its easier to debug shit", default=0, type=int)
 parser.add_argument("-fm", "--finesse_multiplier", type=float, default=1)
+parser.add_argument("-sl", "--starting_laser", type=float, default=0)
 
 args, _ = parser.parse_known_args()
 
@@ -51,7 +52,9 @@ BULLETS = 1
 RAPID_FIRE = 2
 MISSLES = 3
 NUKES = 4
-weapons = {BULLETS: None, RAPID_FIRE: "rapid_fire_count", MISSLES: "missles", NUKES: "nukes"}
+LASER = 5
+
+weapons = {BULLETS: "Blaster", RAPID_FIRE: "rapid_fire_count", MISSLES: "missles", NUKES: "nukes", LASER: "laser"}
 
 MISSLES_BTN = pygame.K_m
 RAPIDFIRE_BTN = pygame.K_DOWN

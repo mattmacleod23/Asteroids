@@ -120,6 +120,15 @@ class NukeDebris(BonusDebris):
         player.nukes += 2
 
 
+class LaserDebris(BonusDebris):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = purple
+
+    def collect(self, player):
+        player.laser += 5
+
+
 class SaucerDebrisFactory:
     debris_types = [MatrixDebris, RapidFireDebris, ShieldDebris]
 
@@ -127,6 +136,9 @@ class SaucerDebrisFactory:
         if type(saucer) is Battleship:
             if random.randint(0, 8) == 1:
                 return NukeDebris(*args, **kwargs)
+
+            if random.randint(0, 12) == 1:
+                return LaserDebris(*args, **kwargs)
 
         if random.randint(0, 15) == 1:
             return MissleDebris(*args, **kwargs)

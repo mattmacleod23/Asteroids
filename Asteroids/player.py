@@ -2,7 +2,7 @@ from display import gameDisplay
 from utils import *
 from sounds import *
 import math
-from bullet import Bullet, Missle, Nuke
+from bullet import Bullet, Missle, Nuke, Laser
 from time import time
 
 
@@ -31,6 +31,7 @@ class Player(Displayable):
         self.player = self
         self.size = 45
         self.nukes = args.starting_nukes
+        self.laser = args.starting_laser
         self.rapid_fire_count = 0
         self.draw_selected_weapon_time = 0
         self.speed = 0
@@ -137,6 +138,13 @@ class Player(Displayable):
             self.selected_weapon = MISSLES
             self.missles -= 1
             if self.missles == 0:
+                self.selected_weapon = BULLETS
+
+        elif self.selected_weapon == LASER:
+            bullets.append(Laser(self.x, self.y, self.dir))
+            self.laser -= 1
+            play_sound(snd_fire)
+            if self.laser == 0:
                 self.selected_weapon = BULLETS
 
         elif self.selected_weapon == NUKES:

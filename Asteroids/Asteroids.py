@@ -24,7 +24,7 @@ pygame.display.set_caption("Roid Rage")
 timer = pygame.time.Clock()
 
 # seeking missle
-# purple lazer
+# purple laser
 # shotgun blast
 # multiple saucers
 # health
@@ -38,6 +38,9 @@ timer = pygame.time.Clock()
 # make side movements
 # make lists iterable safe so loops dont get confused if something is removed during a loop
 # freeze everything
+# make a saucer that shoots at a quicker interval
+# make a saucer that shoots some kind of nuke like thing or "frag" type thing
+
 
 
 def handle_events(player, bullets, collector_bullets, gameState, hyperspace, player_dying_delay):
@@ -182,10 +185,10 @@ def gameLoop(startingState):
 
     saucers = safelist([saucer_factory() for _ in range(0, 0)])
     saucers.append(Battleship(dodge_bullet_range=700, health=100, finesse=20))
+    #saucers.append(Boss(stage=1))
+    #saucers.append(Sniper())
 
     i = 0
-
-
 
     # Main loop
     while gameState != "Exit":
@@ -267,9 +270,11 @@ def gameLoop(startingState):
                     asteroids.remove(a)
 
         # Update ship fragments
-        for f in player_pieces:
+        for f in list(player_pieces):
             f.updateDeadPlayer()
             if f.x > display_width or f.x < 0 or f.y > display_height or f.y < 0:
+                player_pieces.remove(f)
+            if f.life <= 0:
                 player_pieces.remove(f)
 
         for f in saucer_debris:
@@ -536,22 +541,33 @@ def gameLoop(startingState):
             drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 100, 50)
             live = -1
 
-        # draw score and power up levels
-        drawText("S{} - {}".format(stage, score), white, 60, 20, 40, False)
+        x_pos = 100
+        p_int = 265
+
+        drawText("S{} - {}".format(stage, score), white, x_pos, 20, 40, False)
+        x_pos += p_int
 
         matrix_time_left = max(0, round(player.matrix_till - time(), 1))
-        drawText("MATRIX - " + str(matrix_time_left), green, 280, 20, 35, False)
+        drawText("MATRIX - " + str(matrix_time_left), green, x_pos, 20, 35, False)
+        x_pos += p_int -  30
 
         on_off = "ON" if player.selected_weapon == RAPID_FIRE else "OFF"
-        drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, 490, 20, 35, False)
+        drawText("RapidF - {} - {}".format(str(player.rapid_fire_count), on_off), red, x_pos, 20, 35, False)
+        x_pos += p_int
 
         on_off = "ON" if player.selected_weapon == MISSLES else "OFF"
-        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, 750, 20, 35, False)
+        drawText("MISSLES - {} - {}".format(str(player.missles), on_off), orange, x_pos, 20, 35, False)
+        x_pos += p_int + 10
 
         on_off = "ON" if player.selected_weapon == NUKES else "OFF"
-        drawText("Nukes - {} - {}".format(str(player.nukes), on_off), light_green, 1050, 20, 35, False)
+        drawText("Nukes - {} - {}".format(str(player.nukes), on_off), light_green, x_pos, 20, 35, False)
+        x_pos += p_int + 10
 
-        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, 1360, 20, 35, False)
+        on_off = "ON" if player.selected_weapon == LASER else "OFF"
+        drawText("Laser - {} - {}".format(str(player.laser), on_off), purple, x_pos, 20, 35, False)
+        x_pos += p_int + 10
+
+        drawText("INV Time {}".format(round(player.invi_dur / 30, 1)), yellow, x_pos, 20, 35, False)
         drawText("Saucers Left - {}".format(saucers_this_stage), white, display_width - 280, 20, 35, False)
 
         drawText(f"Lives: {live + 1}", white, 75, 75, 35, False)

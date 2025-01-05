@@ -230,7 +230,7 @@ class safelist(list):
 
 
 # Create class for shattered ship
-class deadPlayer:
+class deadPlayer(Displayable):
     def __init__(self, x, y, l):
         self.angle = random.randrange(0, 360) * math.pi / 180
         self.dir = random.randrange(0, 360) * math.pi / 180
@@ -239,6 +239,9 @@ class deadPlayer:
         self.y = y
         self.lenght = l
         self.speed = random.randint(2, 8)
+        self.life = 120
+        self.size = 35
+        self.register_displayable()
 
     def updateDeadPlayer(self):
         pygame.draw.line(gameDisplay, white,
@@ -249,6 +252,7 @@ class deadPlayer:
         self.angle += self.rtspd
         self.x += self.speed * math.cos(self.dir)
         self.y += self.speed * math.sin(self.dir)
+        self.life -= 1
 
 
 def blowUp(obj, player_pieces):
