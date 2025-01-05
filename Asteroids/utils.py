@@ -61,6 +61,10 @@ def get_safe_rect(x, y, width, height):
 # previous position is no longer going to be drawn back over.  Which is why power ups and big bullets get stuck on the
 # borders of the screen.  Need to be able to add the previous and current position of the objects to the previous rectangles
 # list to be able to clear its old and current position.
+
+
+# todo: i think the bottom half of nukes seems to get stuck on the bottom of the screen when it is blown up on the right side near the edge of the screen
+
 class Displayable:
     displayables = []
     prev_rectangles = []
