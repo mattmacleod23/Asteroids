@@ -22,7 +22,6 @@ class Saucer(Displayable):
     def __init__(self, **kwargs):
         self.size = 15
         self.score = 10
-        self.sound = snd_saucerB
         self.x = 0
         self.y = 0
         self.dirchoice = ()
@@ -148,7 +147,7 @@ class Saucer(Displayable):
         if self.shields > 0:
             self.had_shields = True
             pygame.draw.circle(gameDisplay, blue, (int(self.x), int(self.y)), self.size * 1.323, 1)
-            drawText(str(self.shields), blue, int(self.x + (shields_size / 2) + 20), int(self.y + (shields_size / 2) + 20), 22)
+            drawText(str(self.shields), blue, int(self.x + (self.size * 1.323 * .8) + 5), int(self.y + (self.size * 1.323 * .8) + 5), 22)
         else:
             self.had_shields = False
 
@@ -378,7 +377,8 @@ class SaucerFactory:
 
         if self.saucer_num % battleship_interval == 0:
             finesse = int(min((stage * 5) + 10 * self.difficulty, 100))
-            return Battleship(speed=speed, finesse=finesse, dodge_bullet_range=700)
+            shields = int(10 + (stage * self.difficulty))
+            return Battleship(speed=speed, finesse=finesse, dodge_bullet_range=700, shields=shields)
 
         if not random.randint(0, 3):
             return LargeSaucer(speed=speed, finesse=0 if stage < 3 else (stage * 2 * self.difficulty))

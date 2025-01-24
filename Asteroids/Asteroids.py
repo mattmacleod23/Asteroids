@@ -8,7 +8,8 @@ from asteroid import *
 from time import time
 import psutil
 import os
-
+from pickle import dump, load
+from os.path import getctime
 
 
 # set priority
@@ -42,9 +43,6 @@ timer = pygame.time.Clock()
 # make a saucer that shoots some kind of nuke like thing or "frag" type thing
 
 
-
-
-
 # Game menu
 difficulty_levels = {
     "Easy": 0.07,
@@ -72,6 +70,7 @@ def menu(selected_difficulty):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             gameState = "Exit"
+            raise SystemExit
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 selected_index = (selected_index - 1) % len(difficulties)
@@ -88,6 +87,8 @@ def menu(selected_difficulty):
 
 
 class Game:
+    pickle_dir = "\\tmp\\asteroids_saves"
+
     def __init__(self, startingState):
         self.gameState = startingState
         self.player_state = "Alive"
@@ -134,6 +135,16 @@ class Game:
         self.saucers = safelist([self.saucer_factory() for _ in range(0, 0)])
         self.saucers.append(Battleship(dodge_bullet_range=700, health=100, finesse=20))
 
+    def save_game(self, save_name):
+        # pickle the game state
+        with open(self.pickle_dir + "\\" + save_name, "wb") as f:
+            dump(self, f)
+
+    def load_game(self, save_name):
+        # load the game state
+        with open(self.pickle_dir + "\\" + save_name, "rb") as f:
+            self = load(f)
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -172,6 +183,7 @@ class Game:
                 if self.gameState == "Game Over":
                     if event.key == pygame.K_r:
                         self.gameState = "Exit"
+                        self.__init__("Menu")
                         self.game_loop()
 
                 if event.key == pygame.K_p:
@@ -179,6 +191,14 @@ class Game:
                         self.gameState = "Paused"
                     else:
                         self.gameState = "Playing"
+
+                if self.gameState == "Paused":
+                    if event.key == pygame.K_s:
+                        self.save_game(str(int(time())))
+                    if event.key == pygame.K_l:
+                        raise LoadGameException(self.pickle_dir + "\\" + "save1")
+                    if event.key == pygame.K_q:
+                        self.gameState = "Exit"
 
                 if event.key == pygame.K_LSHIFT:
                     self.hyperspace = 30
@@ -550,9 +570,19 @@ class Game:
                 print("Slow display update {}".format(diff))
 
 
-# Start game
-game = Game("Menu")
-game.game_loop()
+class LoadGameException(Exception):
+    def __init__(self, save_name):
+        self.save_name = save_name
+
+game = None
+
+while 1:
+    try:
+        if not game:
+            game = Game("Menu")
+        game.game_loop()
+    except LoadGameException as e:
+        game = load(open(e.save_name, "rb"))
 
 # End game
 pygame.quit()

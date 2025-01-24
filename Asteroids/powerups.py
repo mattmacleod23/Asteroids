@@ -126,7 +126,7 @@ class LaserDebris(BonusDebris):
         self.color = purple
 
     def collect(self, player):
-        player.laser += 5
+        player.laser += 10
 
 
 class SaucerDebrisFactory:
@@ -137,7 +137,7 @@ class SaucerDebrisFactory:
             if random.randint(0, 8) == 1:
                 return NukeDebris(*args, **kwargs)
 
-            if random.randint(0, 12) == 1:
+            if random.randint(0, 6) == 1:
                 return LaserDebris(*args, **kwargs)
 
         if random.randint(0, 15) == 1:

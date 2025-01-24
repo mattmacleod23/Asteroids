@@ -155,6 +155,7 @@ class Nuke(Bullet):
         self.blow_up_distance = 140
         self.kill_distance = 0
         self.blow_up_lines = None
+        self.prev_rect = None
 
     def blow_up(self):
         self.is_blowing_up = True
