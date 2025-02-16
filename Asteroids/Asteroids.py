@@ -8,8 +8,9 @@ from asteroid import *
 from time import time
 import psutil
 import os
-from pickle import dump, load
+from dill import dump, load
 from os.path import getctime
+from traceback import format_exc
 
 
 # set priority
@@ -70,7 +71,7 @@ def menu(selected_difficulty):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             gameState = "Exit"
-            raise SystemExit
+            raise SystemExit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 selected_index = (selected_index - 1) % len(difficulties)
@@ -137,8 +138,12 @@ class Game:
 
     def save_game(self, save_name):
         # pickle the game state
+        game_objs = {}
+        game_objs["game"] = self
+        game_objs["displayables"] = Displayable.displayables
+        game_objs["prev_rectangles"] = Displayable.prev_rectangles
         with open(self.pickle_dir + "\\" + save_name, "wb") as f:
-            dump(self, f)
+            dump(game_objs, f)
 
     def load_game(self, save_name):
         # load the game state
@@ -194,9 +199,12 @@ class Game:
 
                 if self.gameState == "Paused":
                     if event.key == pygame.K_s:
-                        self.save_game(str(int(time())))
+                        raise SaveGameException(str(int(time())))
                     if event.key == pygame.K_l:
-                        raise LoadGameException(self.pickle_dir + "\\" + "save1")
+                        # get the most recent save
+                        files = os.listdir(self.pickle_dir)
+                        latest_file = max(files, key=lambda x: getctime(self.pickle_dir + "\\" + x))
+                        raise LoadGameException(self.pickle_dir + "\\" + latest_file)
                     if event.key == pygame.K_q:
                         self.gameState = "Exit"
 
@@ -515,8 +523,15 @@ class Game:
 
         drawText(f"Lives: {self.live + 1}", white, 75, 75, 35, False)
 
-    def game_loop(self):
-        self.initialize_game()
+    def game_loop(self, loaded_game=False):
+        print("Game loop started for {}".format(id(self)))
+        if not loaded_game:
+            self.initialize_game()
+            just_loaded = False
+        else:
+            just_loaded = True
+            self.gameState = "JustLoaded"
+
         while self.gameState != "Exit":
             start_time = time()
             self.i += 1
@@ -530,6 +545,10 @@ class Game:
 
             if not self.handle_user_inputs():
                 continue
+
+            if just_loaded:
+                Player.player = self.player
+                gameDisplay.fill(black)
 
             self.update_player()
             self.reset_display()
@@ -566,6 +585,11 @@ class Game:
             t2 = time()
             diff = t2 - t1
 
+            if just_loaded:
+                just_loaded = False
+                self.gameState = "Paused"
+                pygame.display.update()
+
             if diff > 0.004:
                 print("Slow display update {}".format(diff))
 
@@ -574,15 +598,37 @@ class LoadGameException(Exception):
     def __init__(self, save_name):
         self.save_name = save_name
 
+
+class SaveGameException(Exception):
+    def __init__(self, save_name):
+        self.save_name = save_name
+
+
 game = None
+game_loaded = False
 
 while 1:
     try:
         if not game:
             game = Game("Menu")
-        game.game_loop()
+        if not game_loaded:
+            game.game_loop()
+        else:
+            game_loaded = False
+            game.gameState = "JustLoaded"
+            game.game_loop(loaded_game=True)
     except LoadGameException as e:
-        game = load(open(e.save_name, "rb"))
+        game_objs = load(open(e.save_name, "rb"))
+        del game
+        game = game_objs["game"]
+        Displayable.displayables = game_objs["displayables"]
+        Displayable.prev_rectangles = game_objs["prev_rectangles"]
+        game_loaded = True
+    except SaveGameException as e:
+        game.save_game(e.save_name)
+    except Exception as e:
+        print(format_exc())
+        break
 
 # End game
 pygame.quit()
